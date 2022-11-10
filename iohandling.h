@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 
-/* Defines*/
+/* Defines */
 #define ERROR_EOF "-1"
 
 /* Methods for file handling */
