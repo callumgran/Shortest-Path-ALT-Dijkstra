@@ -55,9 +55,6 @@ inline void *heapq_right_child(struct heapq_t *hq, int idx);
 /* Method to get the item of the parent in the heap. */
 inline void *heapq_parent(struct heapq_t *hq, int idx);
 
-/* Method to dynamically allocate memory to the heap queue if it is full. */
-void ensure_capacity(struct heapq_t *hq);
-
 /* Method to heapify upwards from a specified node. */
 void heapify_up(struct heapq_t *hq);
 
