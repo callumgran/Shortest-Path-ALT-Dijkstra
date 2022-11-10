@@ -3,7 +3,7 @@
 #include <string.h>
 #include "iohandling.h"
 
-char *f_next_item(FILE *fp)
+static char *f_next_item(FILE *fp)
 {
     char    ch;
     char    *buf;

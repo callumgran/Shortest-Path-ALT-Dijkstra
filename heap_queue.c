@@ -18,7 +18,7 @@ inline void *heapq_parent(struct heapq_t *hq, int idx)
     return hq->items[heapq_parent_idx(idx)];
 }
 
-void ensure_capacity(struct heapq_t *hq)
+static void ensure_capacity(struct heapq_t *hq)
 {
     if (hq->size == hq->capacity) {
         hq->capacity *= 2;

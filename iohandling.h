@@ -10,7 +10,7 @@
 /* Methods for file handling */
 
 /* Method to get the collection of chars from input. */
-char *f_next_item(FILE *fp);
+static char *f_next_item(FILE *fp);
 
 /* Method to get the next int from a file. */
 int f_next_int(FILE *fp);
