@@ -1,24 +1,42 @@
 #ifndef IOHANDLING_H
 #define IOHANDLING_H
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
 /* Defines */
-#define ERROR_EOF "-1"
+#define ERROR_EOF -1
 
 /* Methods for file handling */
 
 /* Method to get the collection of chars from input. */
-static char *f_next_item(FILE *fp);
+char *f_next_item(FILE *fp);
 
 /* Method to get the next int from a file. */
-static int f_next_int(FILE *fp);
+int f_next_int(FILE *fp);
 
 /* Method to get the next double from a file. */
-static double f_next_double(FILE *fp);
+double f_next_double(FILE *fp);
 
-static char *f_next_item(FILE *fp)
+/* Method to consooooooooome entire line */
+void f_consume_line(FILE *fp);
+
+
+/* function definitions */
+
+void f_consume_line(FILE *fp)
+{
+    char ch;
+    while ((ch = fgetc(fp))) {
+        if (ch == '\n')
+            break;
+        if (ch == EOF)
+            break;
+    }
+}
+
+char *f_next_item(FILE *fp)
 {
     char    ch;
     char    *buf;
@@ -26,11 +44,10 @@ static char *f_next_item(FILE *fp)
 
     buf = (char *)(malloc(sizeof(char) * 128));
 
-    while ((ch = fgetc(fp)) == ' ') {
-    }
+    while ((ch = fgetc(fp)) == ' ');
 
     if (ch == EOF)
-        return ERROR_EOF;
+        return NULL;
 
     buf[i++] = ch;
 
@@ -51,33 +68,37 @@ static char *f_next_item(FILE *fp)
     } while (ch != EOF);
 
     if (ch == EOF)
-        return ERROR_EOF;
+        return NULL;
     
     return buf;
 }
 
-static int f_next_int(FILE *fp)
+int f_next_int(FILE *fp)
 {
     char        *buf;
     int         ret;
     
     buf = f_next_item(fp);
+    if (buf)
+        return ERROR_EOF;
     ret = atoi(buf);
 
     free(buf);
     return ret;
 }
 
-static double f_next_double(FILE *fp)
+double f_next_double(FILE *fp)
 {
     char        *buf;
-    char        *strtodp;
     double      ret;
     
     buf = f_next_item(fp);
-    ret = strtod(buf, &strtodp);
+    if (buf == NULL)
+        return ERROR_EOF;
 
+    ret = strtod(buf, NULL);
     free(buf);
+
     return ret;
 }
 
