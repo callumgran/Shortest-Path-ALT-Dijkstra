@@ -3,22 +3,15 @@
 #include <stdbool.h>
 #include <string.h>
 #include <stdint.h>
-
-typedef bool (compare_func)(void *a, void *b);
-
-struct heapq_t {
-    void            **items; 
-    size_t          size;
-    size_t          capacity;
-    compare_func    *cmp;
-};
+#include "heap_queue.h"
+#include "iohandling.h"
 
 struct edge_t {
-    uint32_t        from_idx;
-    uint32_t        to_idx;
-    uint32_t        m_dist;
-    uint32_t        t_dist;
-    uint32_t        spd_lim;
+    int             from_idx;
+    int             to_idx;
+    int             m_dist;
+    int             t_dist;
+    int             spd_lim;
     struct edge_t   *next;
 };
 
@@ -34,9 +27,9 @@ struct position_t {
 };
 
 struct node_info_t {
-    uint32_t        node_idx;
-    uint32_t        t_tot;
-    uint32_t        m_tot;
+    int             node_idx;
+    int             t_tot;
+    int             m_tot;
     struct position_t *position;
 };
 
@@ -46,140 +39,40 @@ struct node_list_t {
 };
 
 struct shortest_path_t {
-    uint32_t        prev_idx;
-    uint32_t        prev_tot;
-    uint32_t        m_tot;
-    uint32_t        t_tot;
+    int             prev_idx;
+    int             prev_tot;
+    int             m_tot;
+    int             t_tot;
 };
 
-#define HEAPQ_STARTING_CAPACITY 32
-#define ERROR_EOF -1
 #define INF (1 << 30)
-
+#define ERROR_EOF -1
 #define NODE_UNVISITED -1
 #define NODE_START -2
-
-#define heapq_left_child_idx(parent_idx) ((parent_idx << 1) + 1)
-#define heapq_right_child_idx(parent_idx) ((parent_idx + 1) << 1)
-#define heapq_parent_idx(child_idx) ((child_idx - 1) >> 1)
-
-#define heapq_has_left(idx, size) (heapq_left_child_idx(idx) < size)
-#define heapq_has_right(idx, size) (heapq_right_child_idx(idx) < size)
-
-#define swap(a, b)                      \
-    do {                                \
-        void *c = a;                    \
-        a = b;                          \
-        b = c;                          \
-    } while(0);                         \
-
-static inline void *heapq_left_child(struct heapq_t *hq, int idx)
-{
-    return hq->items[heapq_left_child_idx(idx)];
-}
-
-static inline void *heapq_right_child(struct heapq_t *hq, int idx)
-{
-    return hq->items[heapq_right_child_idx(idx)];
-}
-
-static inline void *heapq_parent(struct heapq_t *hq, int idx)
-{
-    return hq->items[heapq_parent_idx(idx)];
-}
-
-static void ensure_capacity(struct heapq_t *hq)
-{
-    if (hq->size == hq->capacity) {
-        hq->capacity *= 2;
-        hq->items = realloc(hq->items, hq->capacity * sizeof(void *));
-    }
-}
-
-static void heapify_up(struct heapq_t *hq)
-{
-    int idx = hq->size - 1;
-    int parent_idx = heapq_parent_idx(idx);
-    while (parent_idx >= 0 && hq->cmp(hq->items[parent_idx], hq->items[idx])) {
-        swap(hq->items[parent_idx], hq->items[idx]);
-        idx = heapq_parent_idx(idx);
-        parent_idx = heapq_parent_idx(idx);
-    }
-}
-
-static void heapify_down(struct heapq_t *hq)
-{
-    int idx = 0;
-    int min_idx;
-    while (heapq_has_left(idx, hq->size)) {
-        min_idx = heapq_left_child_idx(idx);
-        if (heapq_has_right(idx, hq->size) && hq->cmp(hq->items[min_idx], 
-                                                      heapq_right_child(hq, idx)))
-            min_idx = heapq_right_child_idx(idx);
-
-        if (hq->cmp(hq->items[min_idx], hq->items[idx])) {
-            break;
-        } else {
-            swap(hq->items[idx], hq->items[min_idx]);
-            idx = min_idx;
-        }
-    }
-}
-
-void *heapq_get(struct heapq_t *hq, int idx)
-{
-    if (idx < 0 || idx >= hq->size)
-        return NULL;
-
-    return hq->items[idx];
-}
-
-void *heapq_pop(struct heapq_t *hq)
-{
-    struct node_t *item = heapq_get(hq, 0);
-    if (item == NULL)
-        return NULL;
-
-    hq->items[0] = hq->items[--hq->size];
-    heapify_down(hq);
-    return item;
-}
-
-void heapq_push(struct heapq_t *hq, void *item)
-{
-    ensure_capacity(hq);
-    hq->items[hq->size++] = item;
-    heapify_up(hq);
-}
-
-void heapq_push_node(struct heapq_t *hq, int node, int m_tot)
-{
-    struct node_info_t *ni = malloc(sizeof(struct node_info_t));
-    ni->node_idx = node;
-    ni->m_tot = m_tot;
-    heapq_push(hq, ni);
-}
-
-void heapq_free(struct heapq_t *hq)
-{
-    free(hq->items);
-    free(hq);
-}
-
-struct heapq_t *heapq_malloc(compare_func *cmp)
-{
-    struct heapq_t *hq = malloc(sizeof(struct heapq_t));
-    hq->size = 0;
-    hq->capacity = HEAPQ_STARTING_CAPACITY;
-    hq->items = malloc(HEAPQ_STARTING_CAPACITY * sizeof(void *));
-    hq->cmp = cmp;
-    return hq;
-}
 
 bool compare(void *a, void *b)
 {
     return ((struct node_info_t *)a)->m_tot >
            ((struct node_info_t *)b)->m_tot;
+}
+
+static inline struct node_t *heapq_get_node(struct heapq_t *hq, int idx)
+{
+    return (struct node_t *)heapq_get(hq, idx);
+}
+
+static inline struct node_t *heapq_pop_node(struct heapq_t *hq)
+{
+    return (struct node_t *)heapq_pop(hq);
+}
+
+void heapq_push_node(struct heapq_t *hq, int node, int m_tot)
+{
+    struct node_info_t *ni = (struct node_info_t *)
+                                (malloc(sizeof(struct node_info_t)));
+    ni->node_idx = node;
+    ni->m_tot = m_tot;
+    heapq_push(hq, ni);
 }
 
 void graph_print(struct graph_t *graph)
@@ -201,82 +94,7 @@ void graph_print(struct graph_t *graph)
 
 }
 
-static int f_next_int(FILE *fp)
-{
-    char ch;
-    char buf[128] = {0};
-    int i = 0;
-
-    while ((ch = fgetc(fp)) == ' ') {
-    }
-
-    if (ch == EOF)
-        return ERROR_EOF;
-
-    buf[i++] = ch;
-
-    do {
-        ch = fgetc(fp);
-        if (ch == ' ') {
-            buf[i] = 0;
-            break;
-        } else if (ch == '\n') {
-            break;
-        } else if (i >= 128) {
-            fprintf(stderr, "Error parsing file: node longer than 128 chars\n");
-            exit(1);
-            break;
-        }
-
-        buf[i++] = ch;
-    } while (ch != EOF);
-
-    if (ch == EOF)
-        return ERROR_EOF;
-
-    return atoi(buf);
-}
-
-static double f_next_double(FILE *fp)
-{
-    char    ch;
-    char    *strtodp;
-    char    buf[128] = {0};
-    int     i;
-
-    i = 0;
-
-    while ((ch = fgetc(fp)) == ' ') {
-    }
-
-    if (ch == EOF)
-        return ERROR_EOF;
-
-    buf[i++] = ch;
-
-    do {
-        ch = fgetc(fp);
-        if (ch == ' ') {
-            buf[i] = 0;
-            break;
-        } else if (ch == '\n') {
-            break;
-        } else if (i >= 128) {
-            fprintf(stderr, "Error parsing file: node longer than 128 chars\n");
-            exit(1);
-            break;
-        }
-
-        buf[i++] = ch;
-    } while (ch != EOF);
-
-    if (ch == EOF)
-        return ERROR_EOF;
-
-    return strtod(buf, &strtodp);
-}
-
-static void node_list_insert(struct node_list_t *nl, uint32_t n_idx, 
+static void node_list_insert(struct node_list_t *nl, int n_idx, 
                                 double latitude, double longitude)
 {
     struct node_info_t *n_info;
@@ -338,8 +156,8 @@ struct node_list_t *parse_nodes(char *file_name)
     return nl;
 }
 
-static void graph_insert(struct graph_t *graph, uint32_t from_idx, uint32_t to_idx, 
-                                uint32_t m_dist, uint32_t t_dist, uint32_t spd_lim)
+static void graph_insert(struct graph_t *graph, int from_idx, int to_idx, 
+                                int m_dist, int t_dist, int spd_lim)
 {
     struct edge_t *edge = malloc(sizeof(struct edge_t));
     edge->from_idx = from_idx;
@@ -450,7 +268,7 @@ void shortest_path_t_print(struct shortest_path_t *sp, int node_count)
     }
 }
 
-struct shortest_path_t *dijkstra(struct graph_t *graph, uint32_t start_node)
+struct shortest_path_t *dijkstra(struct graph_t *graph, int start_node)
 {
     bool visited[graph->node_count];
     
@@ -469,7 +287,7 @@ struct shortest_path_t *dijkstra(struct graph_t *graph, uint32_t start_node)
 
     struct edge_t *neighbour;
     struct node_info_t *ni;
-    while ((ni = (struct node_info_t *)heapq_pop(hq)) != NULL) {
+    while ((ni = heapq_pop_node(hq)) != NULL) {
         visited[ni->node_idx] = true;
         neighbour = graph->neighbour_list[ni->node_idx];
 
