@@ -6,15 +6,6 @@
 #include "heap_queue.h"
 #include "iohandling.h"
 
-typedef bool (compare_func)(void *a, void *b);
-
-struct heapq_t {
-    void            **items; 
-    size_t          size;
-    size_t          capacity;
-    compare_func    *cmp;
-};
-
 struct edge_t {
     int             from_idx;
     int             to_idx;
