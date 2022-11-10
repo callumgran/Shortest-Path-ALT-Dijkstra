@@ -7,7 +7,7 @@ static char *f_next_item(FILE *fp)
 {
     char    ch;
     char    *buf;
-    int     i;
+    int     i = 0;
 
     buf = (char *)(malloc(sizeof(char) * 128));
 
@@ -20,7 +20,7 @@ static char *f_next_item(FILE *fp)
 
     do {
         ch = fgetc(fp);
-        if (ch == ' ') {
+        if (ch == ' ' || ch == '\t') {
             buf[i] = 0;
             break;
         } else if (ch == '\n') {
