@@ -3,17 +3,18 @@
 #include <stdbool.h>
 #include "heap_queue.h"
 
-inline void *heapq_left_child(struct heapq_t *hq, int idx)
+
+static inline void *heapq_left_child(struct heapq_t *hq, int idx)
 {
     return hq->items[heapq_left_child_idx(idx)];
 }
 
-inline void *heapq_right_child(struct heapq_t *hq, int idx)
+static inline void *heapq_right_child(struct heapq_t *hq, int idx)
 {
     return hq->items[heapq_right_child_idx(idx)];
 }
 
-inline void *heapq_parent(struct heapq_t *hq, int idx)
+static inline void *heapq_parent(struct heapq_t *hq, int idx)
 {
     return hq->items[heapq_parent_idx(idx)];
 }
@@ -26,7 +27,7 @@ static void ensure_capacity(struct heapq_t *hq)
     }
 }
 
-void heapify_up(struct heapq_t *hq)
+static void heapify_up(struct heapq_t *hq)
 {
     int idx = hq->size - 1;
     int parent_idx = heapq_parent_idx(idx);
@@ -37,7 +38,7 @@ void heapify_up(struct heapq_t *hq)
     }
 }
 
-void heapify_down(struct heapq_t *hq)
+static void heapify_down(struct heapq_t *hq)
 {
     int idx = 0;
     int min_idx;

@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include "iohandling.h"
+#include "io_handling.h"
 
 static char *f_next_item(FILE *fp)
 {
@@ -11,11 +11,10 @@ static char *f_next_item(FILE *fp)
 
     buf = (char *)(malloc(sizeof(char) * 128));
 
-    while ((ch = fgetc(fp)) == ' ') {
-    }
+    while ((ch = fgetc(fp)) == ' ');
 
     if (ch == EOF)
-        return ERROR_EOF;
+        goto error_eof;
 
     buf[i++] = ch;
 
@@ -36,9 +35,13 @@ static char *f_next_item(FILE *fp)
     } while (ch != EOF);
 
     if (ch == EOF)
-        return ERROR_EOF;
+        goto error_eof;
     
     return buf;
+
+error_eof:
+    free(buf);
+    return NULL;
 }
 
 int f_next_int(FILE *fp)
@@ -47,8 +50,10 @@ int f_next_int(FILE *fp)
     int         ret;
     
     buf = f_next_item(fp);
-    ret = atoi(buf);
+    if (buf == NULL)
+        return ERROR_EOF;
 
+    ret = atoi(buf);
     free(buf);
     return ret;
 }
@@ -60,8 +65,22 @@ double f_next_double(FILE *fp)
     double      ret;
     
     buf = f_next_item(fp);
-    ret = strtod(buf, &strtodp);
+    if (buf == NULL)
+        return ERROR_EOF;
 
+    ret = strtod(buf, &strtodp);
     free(buf);
     return ret;
+}
+
+void f_consume_line(FILE *fp)
+{
+    char ch;
+    /* consume entire line */
+    while ((ch = fgetc(fp))) {
+        if (ch == '\n')
+            break;
+        if (ch == EOF)
+            break;
+    }
 }
