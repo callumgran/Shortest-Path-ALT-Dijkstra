@@ -96,7 +96,7 @@ bool parse_node_file(char *file_name, struct graph_t *graph)
     return false;
 }
 
-bool parse_edge_file(char *file_name, struct graph_t *graph)
+bool parse_edge_file(char *file_name, struct graph_t *graph, bool reversed)
 {
     FILE *fp;
     fp = fopen(file_name, "r");
@@ -112,8 +112,15 @@ bool parse_edge_file(char *file_name, struct graph_t *graph)
     graph->neighbour_list = malloc(graph->node_count * sizeof(struct edge_t *));
 
     while (true) {
-        int from_idx = f_next_int(fp);
-        int to_idx = f_next_int(fp);
+        int from_idx;
+        int to_idx;
+        if (reversed) {
+            to_idx = f_next_int(fp);
+            from_idx = f_next_int(fp);
+        } else {
+            from_idx = f_next_int(fp);
+            to_idx = f_next_int(fp);
+        }
         int cost = f_next_int(fp);
         f_consume_line(fp);
         if (to_idx == ERROR_EOF || from_idx == ERROR_EOF || cost == ERROR_EOF)
@@ -225,7 +232,7 @@ void do_dijkstra(char *node_file, char *edge_file, int starting_node)
     err = parse_node_file(node_file, &graph);
     if (err)
         exit(1);
-    err = parse_edge_file(edge_file, &graph);
+    err = parse_edge_file(edge_file, &graph, false);
     if (err)
         exit(1);
 

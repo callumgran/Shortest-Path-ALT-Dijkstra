@@ -1,4 +1,10 @@
-
+#ifndef DIJKSTRA_H
+#define DIJKSTRA_H
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdbool.h>
+#include <string.h>
+#include <assert.h>
 
 /* Defines */
 #define INF (1 << 30)
@@ -62,7 +68,7 @@ bool parse_node_file(char *file_name, struct graph_t *graph);
 
 /* Method to parse edges into graph from file. */
 /* Return true if an error occurs. */
-bool parse_edge_file(char *file_name, struct graph_t *graph);
+bool parse_edge_file(char *file_name, struct graph_t *graph, bool reversed);
 
 /* Dijkstra method */
 /* Finds the shortest path from a to all other nodes in a graph from a start node. */
@@ -74,4 +80,4 @@ void shortest_path_print(struct shortest_path *sp, int node_count);
 /* Initializing function to do dijkstra's algorithm with data. */
 void do_dijkstra(char *node_file, char *edge_file, int starting_node);
 
-
+#endif
