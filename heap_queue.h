@@ -46,21 +46,6 @@ struct heapq_t *heapq_malloc(compare_func *cmp);
 /* Destructor method to free the heap. */
 void heapq_free(struct heapq_t *hq);
 
-/* Method to get the item of the left child in the heap. */
-inline void *heapq_left_child(struct heapq_t *hq, int idx);
-
-/* Method to get the item of the right child in the heap. */
-inline void *heapq_right_child(struct heapq_t *hq, int idx);
-
-/* Method to get the item of the parent in the heap. */
-inline void *heapq_parent(struct heapq_t *hq, int idx);
-
-/* Method to heapify upwards from a specified node. */
-void heapify_up(struct heapq_t *hq);
-
-/* Method to heapify downwards from a specified node. */
-void heapify_down(struct heapq_t *hq);
-
 /* Method to get the first item in the heap queue without removing the item. */
 void *heapq_get(struct heapq_t *hq, int idx);
 
