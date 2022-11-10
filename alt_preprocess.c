@@ -12,13 +12,6 @@ TODO:
 
         Keep the same format for both.
 
-    Multithread:
-        Check threads available.
-        Check for memory available.
-        Pre compute the memory needed for x threads.
-        Find max threads that can be run.
-
-        Create a new thread for each time that is dijkstra run whilst threads are under this amount.
 */
 
 #include <stdio.h>
@@ -27,16 +20,15 @@ TODO:
 #include <pthread.h>
 #include <unistd.h>
 
-// 8 * dijksta params
-#define DIJKSTRA_PARAM_SIZE 8 * 8
+#define POINTER_SIZE sizeof(char *)
+#define DIJKSTRA_PARAM_SIZE POINTER_SIZE << 1
 
 // Fix to params for dijkstra
-#define allocate_thread_params()                                              \
-    {                                                                         \
-        param[0];                                                             \
-        param[1];                                                             \
-        param[2];                                                             \
-    }                                                                         \
+#define allocate_thread_params(graph, node)     \
+    {                                           \
+        param[0] = graph;                       \
+        param[1] = node;                        \
+    }                                           \
 
 int max_threads;
 int n_threads;
@@ -48,7 +40,14 @@ pthread_cond_t t_cond = PTHREAD_COND_INITIALIZER;
 
 static void *dijkstra_thread(void *arg)
 {
-    int **partition = (int **)arg;
+    void            **params;
+    int             start_node;
+    struct graph_t  *graph;
+
+    params = (void **)arg;
+    graph = (struct graph_t *)params[0];
+    start_node = (int)params[1];
+    
     // Run Dijkstra
     free(arg);
     pthread_mutex_lock(&t_mutex);
@@ -60,8 +59,10 @@ static void *dijkstra_thread(void *arg)
 
 static void create_thread()
 {
-    pthread_t thread;
-    int **param = (int **)(malloc(DIJKSTRA_PARAM_SIZE));
+    pthread_t   thread;
+    void        **param;
+
+    param = (void **)(malloc(DIJKSTRA_PARAM_SIZE));
     // allocate_thread_params(dijkstra params);
     pthread_mutex_lock(&t_mutex);
 
@@ -71,11 +72,11 @@ static void create_thread()
     pthread_create(&thread, NULL, dijkstra_thread, param);
 }
 
-void preprocess(int *data, int len, int choice)
+void preprocess(struct graph_t *graph, int node)
 {
     pthread_t   thread;
     int         n_cpus;
-    int         **param;
+    void         **param;
 
     n_cpus = sysconf(_SC_NPROCESSORS_ONLN);
 
@@ -84,7 +85,7 @@ void preprocess(int *data, int len, int choice)
     else
         max_threads = 4;
     
-    param = (int **)(malloc(DIJKSTRA_PARAM_SIZE));
+    param = (void **)(malloc(DIJKSTRA_PARAM_SIZE));
     // allocate_thread_params(dijkstra params);
 
     n_threads = 1;
