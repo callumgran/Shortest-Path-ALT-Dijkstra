@@ -24,7 +24,7 @@ static char *f_next_item(FILE *fp)
     char    *buf;
     int     i;
 
-    buf = (char *)(calloc(128, sizeof(char)));
+    buf = (char *)(malloc(sizeof(char) * 128));
 
     while ((ch = fgetc(fp)) == ' ') {
     }
