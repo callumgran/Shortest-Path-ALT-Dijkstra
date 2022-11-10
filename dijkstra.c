@@ -1,13 +1,12 @@
-/* Written by Nicolai H. Brand 2022 */
-
-#include <stdlib.h>     // malloc, free, realloc, atoi
-#include <stdio.h>      // printf, fprintf, putchar
-#include <stdbool.h>    // bool type
-#include <string.h>     // memset
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdbool.h>
+#include <string.h>
 #include <assert.h>
 
 #include "io_handling.h"
 #include "heap_queue.h"
+
 
 struct node_t {
     int node_idx;
@@ -15,11 +14,16 @@ struct node_t {
     long longitude;
 };
 
+struct node_info_t {
+    int node_idx;
+    int cost_from_start_node;
+};
+
 struct edge_t {
     /* index/value/identifer of the node */
-    int from_idx;       // superflous in this implementation
+    int from_idx;
     int to_idx;
-    int cost;           // time
+    int cost;
     struct edge_t *next;
 };
 
@@ -52,6 +56,14 @@ struct shortest_path {
 #define INF (1 << 30)
 #define NODE_UNVISITED -1
 #define NODE_START -2
+
+void heapq_push_node(struct heapq_t *hq, int node, int cost_from_start_node)
+{
+    struct node_info_t *ni = malloc(sizeof(struct node_info_t));
+    ni->node_idx = node;
+    ni->cost_from_start_node = cost_from_start_node;
+    heapq_push(hq, ni);
+}
 
 
 bool compare(void *a, void *b)
@@ -110,7 +122,6 @@ void graph_free(struct graph_t *graph)
         }
     }
     free(graph->neighbour_list);
-    free(graph);
 }
 
 void shortest_path_print(struct shortest_path *sp, int node_count)
@@ -150,40 +161,40 @@ struct shortest_path *dijkstra(struct graph_t *graph, int start_node)
         sp[i].previous_idx = NODE_UNVISITED;
     }
 
-    //sp[start_node].total_cost = 0;
-    //sp[start_node].previous_idx = NODE_START;
-    //heapq_push(hq, start_node);
+    sp[start_node].total_cost = 0;
+    sp[start_node].previous_idx = NODE_START;
+    heapq_push_node(hq, start_node, 0);
 
-    //struct edge_t *neighbour;
-    //struct node_info *ni;
-    //while ((ni = (struct node_info *)heapq_pop(hq)) != NULL) {
-    //    visited[ni->node_idx] = true;
-    //    neighbour = graph->neighbour_list[ni->node_idx];
+    struct edge_t *neighbour;
+    struct node_info_t *ni;
+    while ((ni = (struct node_info_t *)heapq_pop(hq)) != NULL) {
+        visited[ni->node_idx] = true;
+        neighbour = graph->neighbour_list[ni->node_idx];
 
-    //    /* check all connected neighbours of the current node */
-    //    while (neighbour != NULL) {
-    //        /* if a node is already visited, we can't find a shorter path */
-    //        if (visited[neighbour->to_idx]) {
-    //            neighbour = neighbour->next;
-    //            continue;
-    //        }
-    //        int new_cost = sp[ni->node_idx].total_cost + neighbour->cost;
-    //        /* update shortest path is newly calculated cost is less than previously calcualted */
-    //        if (new_cost < sp[neighbour->to_idx].total_cost) {
-    //            sp[neighbour->to_idx].previous_idx = ni->node_idx;
-    //            sp[neighbour->to_idx].total_cost = new_cost;
-    //            heapq_push_node(hq, neighbour->to_idx, new_cost);
-    //        }
-    //        neighbour = neighbour->next;
-    //    }
-    //    /* 
-    //     * why free? heapq_pop() returns a malloced node that would otherwise be lost if it was not
-    //     * freed here 
-    //     */
-    //    free(ni);
-    //}
+        /* check all connected neighbours of the current node */
+        while (neighbour != NULL) {
+            /* if a node is already visited, we can't find a shorter path */
+            if (visited[neighbour->to_idx]) {
+                neighbour = neighbour->next;
+                continue;
+            }
+            int new_cost = sp[ni->node_idx].total_cost + neighbour->cost;
+            /* update shortest path is newly calculated cost is less than previously calcualted */
+            if (new_cost < sp[neighbour->to_idx].total_cost) {
+                sp[neighbour->to_idx].previous_idx = ni->node_idx;
+                sp[neighbour->to_idx].total_cost = new_cost;
+                heapq_push_node(hq, neighbour->to_idx, new_cost);
+            }
+            neighbour = neighbour->next;
+        }
+        /* 
+         * why free? heapq_pop() returns a malloced node that would otherwise be lost if it was not
+         * freed here 
+         */
+        free(ni);
+    }
 
-    //heapq_free(hq);
+    heapq_free(hq);
     return sp;
 }
 
@@ -278,19 +289,21 @@ void do_dijkstra(char *node_file, char *edge_file, int starting_node)
 //    graph_print(&graph);
 //#endif
 
-    struct shortest_path *sp;
-    printf("Dijkstra's algorithm on file node file '%s' and edge file '%s' using %d as starting node.\n\n", 
-           node_file, edge_file, starting_node);
-    sp = dijkstra(&graph, starting_node);
-    //shortest_path_print(sp, graph->node_count);
-    //graph_free(graph);
-    //free(sp);
+#ifdef VERBOSE
+    printf("Dijkstra's algorithm on file node file '%s' and edge file '%s' using %d as starting \
+            node.\n\n", node_file, edge_file, starting_node);
+#endif
+    struct shortest_path *sp = dijkstra(&graph, starting_node);
+    shortest_path_print(sp, graph.node_count);
+    graph_free(&graph);
+    free(sp);
 }
 
 int main(int argc, char **argv)
 {
     if (argc != 4) {
-        fprintf(stderr, "usage: %s <path_to_node_file> <path_to_edge_file> <starting_node>\n", argv[0]);
+        fprintf(stderr, "usage: %s <path_to_node_file> <path_to_edge_file> <starting_node>\n",
+                argv[0]);
         fprintf(stderr, "example: %s nodes.txt edges.txt 1\n", argv[0]);
         exit(1);
     }
