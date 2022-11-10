@@ -6,58 +6,9 @@
 
 #include "io_handling.h"
 #include "heap_queue.h"
+#include "dijkstra.h"
 
-
-struct node_t {
-    int node_idx;
-    long latitude;
-    long longitude;
-};
-
-struct node_info_t {
-    int node_idx;
-    int cost_from_start_node;
-};
-
-struct edge_t {
-    /* index/value/identifer of the node */
-    int from_idx;
-    int to_idx;
-    int cost;
-    struct edge_t *next;
-};
-
-struct graph_t {
-    struct node_t **node_list;
-    /*
-     * every node in the node_list has a linked list of edges.
-     * the value at the index of the neighbour_list is the head of the linked list of edges.
-     *
-     * example:
-     * [0]      -> edge -> edge -> edge
-     * [1]      -> edge
-     * [2]      -> NULL
-     * [3]      -> edge -> edge
-     * ...
-     * [i]
-     */
-    struct edge_t **neighbour_list;
-    int node_count;
-    int edge_count;
-};
-
-
-/* ad-hoc datastructure to store information given by performing dijkstra */
-struct shortest_path {
-    int previous_idx;
-    int total_cost;
-};
-
-#define INF (1 << 30)
-#define NODE_UNVISITED -1
-#define NODE_START -2
-
-void heapq_push_node(struct heapq_t *hq, int node, int cost_from_start_node)
+static void heapq_push_node(struct heapq_t *hq, int node, int cost_from_start_node)
 {
     struct node_info_t *ni = malloc(sizeof(struct node_info_t));
     ni->node_idx = node;
@@ -66,29 +17,21 @@ void heapq_push_node(struct heapq_t *hq, int node, int cost_from_start_node)
 }
 
 
-bool compare(void *a, void *b)
+static bool compare(void *a, void *b)
 {
     return ((struct edge_t *)a)->cost > ((struct edge_t *)b)->cost;
 }
 
 /* ---------- graph functions ---------- */
-void graph_print(struct graph_t *graph)
+
+static void graph_insert_node(struct graph_t *graph, int node_idx, double latitude, double longitude)
 {
-    printf("total nodes: %d, total edges: %d.\n", graph->node_count, graph->edge_count);
-    printf("[node] list of all edges (to, cost).\n");
+    struct node_t *node = malloc(sizeof(struct node_t));
+    node->node_idx = node_idx;
+    node->latitude = latitude;
+    node->longitude = longitude;
 
-    struct edge_t *edge_i;
-    for (int i = 0; i < graph->node_count; i++) {
-        printf("[%d] ", i);
-        edge_i = graph->neighbour_list[i];
-        while (edge_i != NULL) {
-            printf("(%d, %d) ", edge_i->to_idx, edge_i->cost);
-            edge_i = edge_i->next;
-        }
-        putchar('\n');
-    }
-    putchar('\n');
-
+    graph->node_list[node_idx] = node;
 }
 
 static void graph_insert_edge(struct graph_t *graph, int from_idx, int to_idx, int cost)
@@ -124,31 +67,66 @@ void graph_free(struct graph_t *graph)
     free(graph->neighbour_list);
 }
 
-void shortest_path_print(struct shortest_path *sp, int node_count)
-{
-    printf("[node] [previous node] [cost]\n");
-    printf("-----------------------------------\n");
-    for (int i = 0; i < node_count; i++) {
-        printf("%d\t", i);
-        if (sp[i].previous_idx == NODE_START) {
-            printf("start\n");
-            continue;
-        } else if (sp[i].previous_idx == NODE_UNVISITED) {
-            printf("unreachable\n");
-            continue;
-        } else {
-            printf("%d\t", sp[i].previous_idx);
-        }
 
-        if (sp[i].total_cost == INF)
-            printf("ERROR: visited node has total_cost set to infinity\n");
-        else
-            printf("%d\n", sp[i].total_cost);
+bool parse_node_file(char *file_name, struct graph_t *graph)
+{
+    FILE *fp;
+    fp = fopen(file_name, "r");
+    if (fp == NULL)
+        return true;
+
+    int node_count = f_next_int(fp);
+    if (node_count == ERROR_EOF || node_count < 1)
+        return true;
+
+    graph->node_count = node_count;
+    graph->node_list = malloc(node_count * sizeof(struct node_t *));
+
+    while (true) {
+        int node_idx = f_next_int(fp);
+        double latitude = f_next_double(fp);
+        double longitude = f_next_double(fp);
+        if (node_idx == ERROR_EOF || latitude == ERROR_EOF || longitude == ERROR_EOF)
+            break;
+
+        graph_insert_node(graph, node_idx, latitude, longitude);
     }
+
+    fclose(fp);
+    return false;
+}
+
+bool parse_edge_file(char *file_name, struct graph_t *graph)
+{
+    FILE *fp;
+    fp = fopen(file_name, "r");
+    if (fp == NULL)
+        return true;
+
+    int edge_count = f_next_int(fp);
+    if (edge_count == ERROR_EOF || edge_count < 1)
+        return true;
+
+    graph->edge_count = edge_count;
+    assert(graph->node_count > 0);
+    graph->neighbour_list = malloc(graph->node_count * sizeof(struct edge_t *));
+
+    while (true) {
+        int from_idx = f_next_int(fp);
+        int to_idx = f_next_int(fp);
+        int cost = f_next_int(fp);
+        f_consume_line(fp);
+        if (to_idx == ERROR_EOF || from_idx == ERROR_EOF || cost == ERROR_EOF)
+            break;
+
+        graph_insert_edge(graph, from_idx, to_idx, cost);
+    }
+
+    fclose(fp);
+    return false;
 }
 
 /* ---------- dijsktra implementation ---------- */
-/* dijkstra's shortest path from a to all other nodes in the graph */
 struct shortest_path *dijkstra(struct graph_t *graph, int start_node)
 {
     bool visited[graph->node_count];
@@ -198,78 +176,46 @@ struct shortest_path *dijkstra(struct graph_t *graph, int start_node)
     return sp;
 }
 
-void graph_insert_node(struct graph_t *graph, int node_idx, double latitude, double longitude)
+static void graph_print(struct graph_t *graph)
 {
-    struct node_t *node = malloc(sizeof(struct node_t));
-    node->node_idx = node_idx;
-    node->latitude = latitude;
-    node->longitude = longitude;
+    printf("total nodes: %d, total edges: %d.\n", graph->node_count, graph->edge_count);
+    printf("[node] list of all edges (to, cost).\n");
 
-    graph->node_list[node_idx] = node;
+    struct edge_t *edge_i;
+    for (int i = 0; i < graph->node_count; i++) {
+        printf("[%d] ", i);
+        edge_i = graph->neighbour_list[i];
+        while (edge_i != NULL) {
+            printf("(%d, %d) ", edge_i->to_idx, edge_i->cost);
+            edge_i = edge_i->next;
+        }
+        putchar('\n');
+    }
+    putchar('\n');
+
 }
 
-/*
- * returns true if error, else false
- */
-bool parse_node_file(char *file_name, struct graph_t *graph)
+void shortest_path_print(struct shortest_path *sp, int node_count)
 {
-    FILE *fp;
-    fp = fopen(file_name, "r");
-    if (fp == NULL)
-        return true;
+    printf("[node] [previous node] [cost]\n");
+    printf("-----------------------------------\n");
+    for (int i = 0; i < node_count; i++) {
+        printf("%d\t", i);
+        if (sp[i].previous_idx == NODE_START) {
+            printf("start\n");
+            continue;
+        } else if (sp[i].previous_idx == NODE_UNVISITED) {
+            printf("unreachable\n");
+            continue;
+        } else {
+            printf("%d\t", sp[i].previous_idx);
+        }
 
-    int node_count = f_next_int(fp);
-    if (node_count == ERROR_EOF || node_count < 1)
-        return true;
-
-    graph->node_count = node_count;
-    graph->node_list = malloc(node_count * sizeof(struct node_t *));
-
-    while (true) {
-        int node_idx = f_next_int(fp);
-        double latitude = f_next_double(fp);
-        double longitude = f_next_double(fp);
-        if (node_idx == ERROR_EOF || latitude == ERROR_EOF || longitude == ERROR_EOF)
-            break;
-
-        graph_insert_node(graph, node_idx, latitude, longitude);
+        if (sp[i].total_cost == INF)
+            printf("ERROR: visited node has total_cost set to infinity\n");
+        else
+            printf("%d\n", sp[i].total_cost);
     }
-
-    fclose(fp);
-    return false;
-}
-
-/*
- * returns true if error, else false
- */
-bool parse_edge_file(char *file_name, struct graph_t *graph)
-{
-    FILE *fp;
-    fp = fopen(file_name, "r");
-    if (fp == NULL)
-        return true;
-
-    int edge_count = f_next_int(fp);
-    if (edge_count == ERROR_EOF || edge_count < 1)
-        return true;
-
-    graph->edge_count = edge_count;
-    assert(graph->node_count > 0);
-    graph->neighbour_list = malloc(graph->node_count * sizeof(struct edge_t *));
-
-    while (true) {
-        int from_idx = f_next_int(fp);
-        int to_idx = f_next_int(fp);
-        int cost = f_next_int(fp);
-        f_consume_line(fp);
-        if (to_idx == ERROR_EOF || from_idx == ERROR_EOF || cost == ERROR_EOF)
-            break;
-
-        graph_insert_edge(graph, from_idx, to_idx, cost);
-    }
-
-    fclose(fp);
-    return false;
 }
 
 void do_dijkstra(char *node_file, char *edge_file, int starting_node)
