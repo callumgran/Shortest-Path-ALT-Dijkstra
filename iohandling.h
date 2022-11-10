@@ -2,9 +2,7 @@
 #define IOHANDLING_H
 #include <stdlib.h>
 #include <stdio.h>
-#include <stdbool.h>
 #include <string.h>
-#include <stdint.h>
 
 /* Defines*/
 #define ERROR_EOF "-1"
