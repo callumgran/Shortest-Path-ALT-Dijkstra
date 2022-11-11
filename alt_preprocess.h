@@ -6,6 +6,7 @@
 #include <pthread.h>
 #include <unistd.h>
 
+#include "graph.h"
 #include "dijkstra.h"
 
 /* Defines */
@@ -15,13 +16,12 @@
 
 /* Landmark node indexes */
 #define LANDMARK_ONE 1
-#define LANDMARK_TWO 1
-#define LANDMARK_THREE 1
+#define LANDMARK_TWO 2
+#define LANDMARK_THREE 3
 
 /* Structs */
-struct thread_info_t {
-    char *node_file;
-    char *edge_file;
+struct thread_data_t {
+    struct graph_t *graph;
     int start_node;
     char *name;
     bool reversed;

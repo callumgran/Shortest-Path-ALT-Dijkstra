@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <stdbool.h>
 
+#include "graph.h"
 #include "dijkstra.h"
 #include "alt_preprocess.h"
 
@@ -13,7 +14,7 @@ pthread_mutex_t t_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t t_cond = PTHREAD_COND_INITIALIZER;
 
 static void write_distances_to_file(struct shortest_path *sp, 
-                                    struct thread_info_t *ti, 
+                                    struct thread_data_t *ti, 
                                     int node_count, 
                                     int start_node)
 {
@@ -33,28 +34,18 @@ static void write_distances_to_file(struct shortest_path *sp,
 
 static void *dijkstra_thread(void *arg)
 {
-    struct thread_info_t *ti;
+    struct thread_data_t *ti;
     struct graph_t graph;
-    struct timespec start, finish;
     double elapsed;
 
-    ti = (struct thread_info_t *)arg;
+    ti = (struct thread_data_t *)arg;
 
-    clock_gettime(CLOCK_MONOTONIC, &start);
-    parse_node_file_v2(ti->node_file, &graph);
-    parse_edge_file_v3(ti->edge_file, &graph, ti->reversed);
-    clock_gettime(CLOCK_MONOTONIC, &finish);
-    elapsed = (finish.tv_sec - start.tv_sec);
-    elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
-    printf("Time used for files was %fms.\n", elapsed * 1000);
+    if (ti->reversed)
+        graph = *graph_transpose(ti->graph);
+    else
+        graph = *graph_copy(ti->graph);
 
-    clock_gettime(CLOCK_MONOTONIC, &start);
     struct shortest_path *sp = dijkstra(&graph, ti->start_node);
-    clock_gettime(CLOCK_MONOTONIC, &finish);
-
-    elapsed = (finish.tv_sec - start.tv_sec);
-    elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
-    printf("Time used for dijkstra was %fms.\n", elapsed * 1000);
 
     write_distances_to_file(sp, ti, graph.node_count, ti->start_node);
 
@@ -69,14 +60,13 @@ static void *dijkstra_thread(void *arg)
     pthread_mutex_unlock(&t_mutex);
 }
 
-static void create_thread(char *node_file, char *edge_file, 
-                            int start_node, char* name, bool reversed)
+static void create_thread(struct graph_t *graph, int start_node, 
+                                        char* name, bool reversed)
 {
     pthread_t thread;
-    struct thread_info_t *ti = (struct thread_info_t *)
-                                (malloc(sizeof(struct thread_info_t)));
-    ti->node_file = node_file;
-    ti->edge_file = edge_file;
+    struct thread_data_t *ti = (struct thread_data_t *)
+                                (malloc(sizeof(struct thread_data_t)));
+    ti->graph = graph;
     ti->start_node = start_node;
     ti->name = name;
     ti->reversed = reversed;
@@ -106,15 +96,34 @@ void preprocess(char *node_file, char *edge_file)
     strncpy(output_files[5], "3cor.txt", 32);
     
     n_threads = 0;
+
+    struct graph_t graph;
+    double elapsed;
+    struct timespec start, finish;
+
+    clock_gettime(CLOCK_MONOTONIC, &start);
+    parse_node_file(node_file, &graph);
+    parse_edge_file(edge_file, &graph);
+    clock_gettime(CLOCK_MONOTONIC, &finish);
+    elapsed = (finish.tv_sec - start.tv_sec);
+    elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+    printf("Time used for files was %f s.\n", elapsed);
+
     int j = 0;
-    create_thread(node_file, edge_file, landmarks[0], output_files[j++], true);
-    create_thread(node_file, edge_file, landmarks[0], output_files[j++], false);
-    create_thread(node_file, edge_file, landmarks[1], output_files[j++], true);
-    create_thread(node_file, edge_file, landmarks[1], output_files[j++], false);
-    create_thread(node_file, edge_file, landmarks[2], output_files[j++], true);
-    create_thread(node_file, edge_file, landmarks[2], output_files[j++], false);
+    clock_gettime(CLOCK_MONOTONIC, &start);
+    create_thread(&graph, landmarks[0], output_files[j++], true);
+    create_thread(&graph, landmarks[0], output_files[j++], false);
+    create_thread(&graph, landmarks[1], output_files[j++], true);
+    create_thread(&graph, landmarks[1], output_files[j++], false);
+    create_thread(&graph, landmarks[2], output_files[j++], true);
+    create_thread(&graph, landmarks[2], output_files[j++], false);
     
     pthread_mutex_lock(&t_mutex);
     pthread_cond_wait(&t_cond, &t_mutex);
     pthread_mutex_unlock(&t_mutex);
+    clock_gettime(CLOCK_MONOTONIC, &finish);
+    elapsed = (finish.tv_sec - start.tv_sec);
+    elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+    printf("Time used for the rest was %f s.\n", elapsed);
+    graph_free(&graph);
 }
