@@ -11,12 +11,6 @@ int n_threads;
 pthread_mutex_t t_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t t_cond = PTHREAD_COND_INITIALIZER;
 
-struct dijkstra_t {
-    struct graph_t *graph;
-    int start_node;
-    char *name;
-};
-
 static void write_distances_to_file(struct shortest_path *sp, struct dijkstra_t *d)
 {
     FILE *output;
@@ -50,8 +44,6 @@ static void *dijkstra_thread(void *arg)
     if (n_threads == 0)
         pthread_cond_signal(&t_cond);
     pthread_mutex_unlock(&t_mutex);
-
-    return sp;
 }
 
 static void create_thread(struct graph_t *graph, int start_node, char* name)
