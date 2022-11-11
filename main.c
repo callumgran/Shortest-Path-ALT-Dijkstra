@@ -8,7 +8,7 @@
 int main(int argc, char **argv)
 {
     if (strcmp(argv[1], "preprocess") == 0)
-        preprocess("noder.txt", "kanter.txt");
+        preprocess("island_noder.txt", "island_kanter.txt");
 
     //if (argc != 4) {
     //    fprintf(stderr, "usage: %s <path_to_node_file> <path_to_edge_file> <starting_node>\n",

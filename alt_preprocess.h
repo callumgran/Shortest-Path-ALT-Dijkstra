@@ -19,10 +19,12 @@
 #define LANDMARK_THREE 1
 
 /* Structs */
-struct dijkstra_t {
-    struct graph_t *graph;
-    char *name;
+struct thread_info_t {
+    char *node_file;
+    char *edge_file;
     int start_node;
+    char *name;
+    bool reversed;
 };
 
 /* Methods */
