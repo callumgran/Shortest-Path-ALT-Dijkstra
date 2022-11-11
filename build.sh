@@ -2,7 +2,7 @@
 
 FILES="$(find . -name "*.c")"
 OUT="alt-dijkstra"
-BUILD_CMD="gcc -o $OUT $FILES"
+BUILD_CMD="gcc -o $OUT $FILES -l pthread"
 
 if [ "$1" = "debug" ]
 then
