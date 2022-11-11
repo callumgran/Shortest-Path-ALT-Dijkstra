@@ -4,6 +4,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <stdbool.h>
+
 #include "dijkstra.h"
 #include "alt_preprocess.h"
 
@@ -18,8 +19,7 @@ static void write_distances_to_file(struct shortest_path *sp, struct dijkstra_t 
     fopen(d->name, output);
 
     for (int i = 0; i < d->graph->node_count; i++)
-        if (sp[i].total_cost != INF)
-            fwrite(&sp[i].total_cost, 4, 1, output);
+        fwrite(&sp[i].total_cost, 4, 1, output);
     
     fclose(output);
 }

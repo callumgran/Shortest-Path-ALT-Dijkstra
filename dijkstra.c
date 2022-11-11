@@ -53,6 +53,25 @@ static void graph_insert_edge(struct graph_t *graph, int from_idx, int to_idx, i
     graph->neighbour_list[from_idx] = edge;
 }
 
+static void graph_print(struct graph_t *graph)
+{
+    printf("total nodes: %d, total edges: %d.\n", graph->node_count, graph->edge_count);
+    printf("[node] list of all edges (to, cost).\n");
+
+    struct edge_t *edge_i;
+    for (int i = 0; i < graph->node_count; i++) {
+        printf("[%d] ", i);
+        edge_i = graph->neighbour_list[i];
+        while (edge_i != NULL) {
+            printf("(%d, %d) ", edge_i->to_idx, edge_i->cost);
+            edge_i = edge_i->next;
+        }
+        putchar('\n');
+    }
+    putchar('\n');
+
+}
+
 void graph_free(struct graph_t *graph)
 {
     struct edge_t *edge_i, *prev;
@@ -181,25 +200,6 @@ struct shortest_path *dijkstra(struct graph_t *graph, int start_node)
 
     heapq_free(hq);
     return sp;
-}
-
-static void graph_print(struct graph_t *graph)
-{
-    printf("total nodes: %d, total edges: %d.\n", graph->node_count, graph->edge_count);
-    printf("[node] list of all edges (to, cost).\n");
-
-    struct edge_t *edge_i;
-    for (int i = 0; i < graph->node_count; i++) {
-        printf("[%d] ", i);
-        edge_i = graph->neighbour_list[i];
-        while (edge_i != NULL) {
-            printf("(%d, %d) ", edge_i->to_idx, edge_i->cost);
-            edge_i = edge_i->next;
-        }
-        putchar('\n');
-    }
-    putchar('\n');
-
 }
 
 void shortest_path_print(struct shortest_path *sp, int node_count)

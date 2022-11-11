@@ -5,6 +5,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <unistd.h>
+
 #include "dijkstra.h"
 
 /* Defines */
