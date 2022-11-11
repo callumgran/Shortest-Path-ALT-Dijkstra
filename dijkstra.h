@@ -5,6 +5,9 @@
 #include <stdbool.h>
 #include <string.h>
 #include <assert.h>
+#include <sys/stat.h>
+#include <sys/mman.h> 
+#include <fcntl.h>
 
 /* Defines */
 #define INF (1 << 30)
@@ -66,9 +69,13 @@ void graph_free(struct graph_t *graph);
 /* Return true if an error occurs. */
 bool parse_node_file(char *file_name, struct graph_t *graph);
 
+bool parse_node_file_v2(char *file_name, struct graph_t *graph);
+
 /* Method to parse edges into graph from file. */
 /* Return true if an error occurs. */
 bool parse_edge_file(char *file_name, struct graph_t *graph, bool reversed);
+
+bool parse_edge_file_v2(char *file_name, struct graph_t *graph, bool reversed);
 
 /* Dijkstra method */
 /* Finds the shortest path from a to all other nodes in a graph from a start node. */

@@ -13,7 +13,9 @@ pthread_mutex_t t_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t t_cond = PTHREAD_COND_INITIALIZER;
 
 static void write_distances_to_file(struct shortest_path *sp, 
-                            struct thread_info_t *ti, int node_count)
+                                    struct thread_info_t *ti, 
+                                    int node_count, 
+                                    int start_node)
 {
     FILE *output;
     output = fopen(ti->name, "w");
@@ -33,20 +35,32 @@ static void *dijkstra_thread(void *arg)
 {
     struct thread_info_t *ti;
     struct graph_t graph;
+    struct timespec start, finish;
+    double elapsed;
 
     ti = (struct thread_info_t *)arg;
 
-    parse_node_file(ti->node_file, &graph);
-    parse_edge_file(ti->edge_file, &graph, ti->reversed);
-    
-    
+    clock_gettime(CLOCK_MONOTONIC, &start);
+    parse_node_file_v2(ti->node_file, &graph);
+    parse_edge_file_v3(ti->edge_file, &graph, ti->reversed);
+    clock_gettime(CLOCK_MONOTONIC, &finish);
+    elapsed = (finish.tv_sec - start.tv_sec);
+    elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+    printf("Time used for files was %fms.\n", elapsed * 1000);
+
+    clock_gettime(CLOCK_MONOTONIC, &start);
     struct shortest_path *sp = dijkstra(&graph, ti->start_node);
+    clock_gettime(CLOCK_MONOTONIC, &finish);
 
-    write_distances_to_file(sp, ti, graph.node_count);
+    elapsed = (finish.tv_sec - start.tv_sec);
+    elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+    printf("Time used for dijkstra was %fms.\n", elapsed * 1000);
 
+    write_distances_to_file(sp, ti, graph.node_count, ti->start_node);
+
+    free(sp);
     graph_free(&graph);
     free(ti->name);
-    free(sp);
     free(arg);
     pthread_mutex_lock(&t_mutex);
     n_threads -= 1;
@@ -93,7 +107,6 @@ void preprocess(char *node_file, char *edge_file)
     
     n_threads = 0;
     int j = 0;
-
     create_thread(node_file, edge_file, landmarks[0], output_files[j++], true);
     create_thread(node_file, edge_file, landmarks[0], output_files[j++], false);
     create_thread(node_file, edge_file, landmarks[1], output_files[j++], true);
