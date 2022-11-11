@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "io_handling.h": "c"
+        "io_handling.h": "c",
+        "pthread.h": "c"
     }
 }
