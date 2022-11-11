@@ -12,37 +12,40 @@ int n_threads;
 pthread_mutex_t t_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t t_cond = PTHREAD_COND_INITIALIZER;
 
-static void write_distances_to_file(struct shortest_path *sp, struct dijkstra_t *d)
+static void write_distances_to_file(struct shortest_path *sp, 
+                            struct thread_info_t *ti, int node_count)
 {
     FILE *output;
-    output = fopen(d->name, "w");
+    output = fopen(ti->name, "w");
 
     if (output == NULL) {
         fprintf(stderr, "could not open file :(");
         exit(1);
     }
-        
 
-    for (int i = 0; i < d->graph->node_count; i++)
+    for (int i = 0; i < node_count; i++)
         fwrite(&sp[i].total_cost, 4, 1, output);
     
-    printf("done\n");
     fclose(output);
 }
 
 static void *dijkstra_thread(void *arg)
 {
-    struct dijkstra_t *d;
+    struct thread_info_t *ti;
+    struct graph_t graph;
 
-    d = (struct dijkstra_t *)arg;
+    ti = (struct thread_info_t *)arg;
+
+    parse_node_file(ti->node_file, &graph);
+    parse_edge_file(ti->edge_file, &graph, ti->reversed);
     
     
-    struct shortest_path *sp = dijkstra(d->graph, d->start_node);
+    struct shortest_path *sp = dijkstra(&graph, ti->start_node);
 
-    write_distances_to_file(sp, d);
+    write_distances_to_file(sp, ti, graph.node_count);
 
-    graph_free(d->graph);
-    free(d->name);
+    graph_free(&graph);
+    free(ti->name);
     free(sp);
     free(arg);
     pthread_mutex_lock(&t_mutex);
@@ -52,19 +55,22 @@ static void *dijkstra_thread(void *arg)
     pthread_mutex_unlock(&t_mutex);
 }
 
-static void create_thread(struct graph_t *graph, int start_node, char* name)
+static void create_thread(char *node_file, char *edge_file, 
+                            int start_node, char* name, bool reversed)
 {
     pthread_t thread;
-    struct dijkstra_t *d = (struct dijkstra_t *)
-                                (malloc(sizeof(struct dijkstra_t)));
-    d->graph = graph;
-    d->start_node = start_node;
-    d->name = name;
+    struct thread_info_t *ti = (struct thread_info_t *)
+                                (malloc(sizeof(struct thread_info_t)));
+    ti->node_file = node_file;
+    ti->edge_file = edge_file;
+    ti->start_node = start_node;
+    ti->name = name;
+    ti->reversed = reversed;
 
     pthread_mutex_lock(&t_mutex);
-    n_threads += 1;
+    n_threads++;
     pthread_mutex_unlock(&t_mutex);
-    pthread_create(&thread, NULL, dijkstra_thread, (void *)d);
+    pthread_create(&thread, NULL, dijkstra_thread, (void *)ti);
 }
 
 void preprocess(char *node_file, char *edge_file)
@@ -79,7 +85,7 @@ void preprocess(char *node_file, char *edge_file)
         output_files[i] = malloc(sizeof(char) * 32);
 
     strncpy(output_files[0], "1rev.txt", 32);
-    strncpy(output_files[1], "2cor.txt", 32);
+    strncpy(output_files[1], "1cor.txt", 32);
     strncpy(output_files[2], "2rev.txt", 32);
     strncpy(output_files[3], "2cor.txt", 32);
     strncpy(output_files[4], "3rev.txt", 32);
@@ -87,18 +93,13 @@ void preprocess(char *node_file, char *edge_file)
     
     n_threads = 0;
     int j = 0;
-    for (int i = 0; i < NUMBER_OF_LANDMARKS; i++) {
-        struct graph_t graph_correct;
-        struct graph_t graph_reversed;
 
-        parse_node_file(node_file, &graph_correct);
-        parse_edge_file(edge_file, &graph_correct, false);
-        create_thread(&graph_correct, landmarks[i], output_files[j++]);
-
-        parse_node_file(node_file, &graph_reversed);
-        parse_edge_file(edge_file, &graph_reversed, true);
-        create_thread(&graph_reversed, landmarks[i], output_files[j++]);
-    }
+    create_thread(node_file, edge_file, landmarks[0], output_files[j++], true);
+    create_thread(node_file, edge_file, landmarks[0], output_files[j++], false);
+    create_thread(node_file, edge_file, landmarks[1], output_files[j++], true);
+    create_thread(node_file, edge_file, landmarks[1], output_files[j++], false);
+    create_thread(node_file, edge_file, landmarks[2], output_files[j++], true);
+    create_thread(node_file, edge_file, landmarks[2], output_files[j++], false);
     
     pthread_mutex_lock(&t_mutex);
     pthread_cond_wait(&t_cond, &t_mutex);
