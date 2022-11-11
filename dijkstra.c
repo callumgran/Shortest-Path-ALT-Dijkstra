@@ -251,15 +251,3 @@ void do_dijkstra(char *node_file, char *edge_file, int starting_node)
     graph_free(&graph);
     free(sp);
 }
-
-int main(int argc, char **argv)
-{
-    if (argc != 4) {
-        fprintf(stderr, "usage: %s <path_to_node_file> <path_to_edge_file> <starting_node>\n",
-                argv[0]);
-        fprintf(stderr, "example: %s nodes.txt edges.txt 1\n", argv[0]);
-        exit(1);
-    }
-
-    do_dijkstra(argv[1], argv[2], atoi(argv[3]));
-}
