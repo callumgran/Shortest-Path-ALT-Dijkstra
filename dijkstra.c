@@ -3,6 +3,12 @@
 #include <stdbool.h>
 #include <string.h>
 #include <assert.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <stdio.h>
+#include <unistd.h>
 
 #include "io_handling.h"
 #include "heap_queue.h"
@@ -26,6 +32,7 @@ static bool compare(void *a, void *b)
 
 static void graph_insert_node(struct graph_t *graph, int node_idx, double latitude, double longitude)
 {
+    // printf("Lat %f Long %f Node %d\n", latitude, longitude, node_idx);
     struct node_t *node = malloc(sizeof(struct node_t));
     node->node_idx = node_idx;
     node->latitude = latitude;
@@ -41,6 +48,7 @@ static void graph_insert_edge(struct graph_t *graph, int from_idx, int to_idx, i
     edge->to_idx = to_idx;
     edge->cost = cost;
     edge->next = NULL;
+    // printf("From %d -> %d = %d\n", from_idx, to_idx, cost);
 
     struct edge_t *head = graph->neighbour_list[from_idx];
     if (head == NULL) {
@@ -86,6 +94,38 @@ void graph_free(struct graph_t *graph)
     free(graph->neighbour_list);
 }
 
+bool parse_node_file_v2(char *file_name, struct graph_t *graph)
+{
+    FILE *fp;
+
+    fp = fopen(file_name, "r");
+
+    if (fp == NULL)
+        return true;
+
+    int node_count;
+    int ret = fscanf(fp, "%d\n", &node_count);
+    if (ret == ERROR_EOF || node_count < 1)
+        return true;
+    
+    graph->node_count = node_count;
+    graph->node_list = malloc(node_count * sizeof(struct node_t *));
+
+    int node_idx;
+    double latitude;
+    double longitude;
+    while (true) {
+        ret = fscanf(fp, "%d %lf %lf\n", &node_idx, &latitude, &longitude);
+
+        if (ret == ERROR_EOF)
+            break;
+        else
+            graph_insert_node(graph, node_idx, latitude, longitude);
+    }
+
+    fclose(fp);
+    return false;
+}
 
 bool parse_node_file(char *file_name, struct graph_t *graph)
 {
@@ -107,8 +147,49 @@ bool parse_node_file(char *file_name, struct graph_t *graph)
         double longitude = f_next_double(fp);
         if (node_idx == ERROR_EOF || latitude == ERROR_EOF || longitude == ERROR_EOF)
             break;
-
+        
         graph_insert_node(graph, node_idx, latitude, longitude);
+    }
+
+    fclose(fp);
+    return false;
+}
+
+bool parse_edge_file_v2(char *file_name, struct graph_t *graph, bool reversed)
+{
+    FILE *fp;
+    char line[128];
+
+    fp = fopen(file_name, "r");
+
+    if (fp == NULL)
+        return true;
+
+    int edge_count;
+    int ret = fscanf(fp, "%d\n", &edge_count);
+    if (ret == ERROR_EOF || edge_count < 1)
+        return true;
+    
+    graph->edge_count = edge_count;
+    assert(graph->node_count > 0);
+    graph->neighbour_list = malloc(graph->node_count * sizeof(struct edge_t *));
+
+    int from_idx;
+    int to_idx;
+    int cost;
+    int throwaway1;
+    int throwaway2;
+    while (true) {
+
+        if (reversed)
+            ret = fscanf(fp, "%d %d %d %d %d \n", &to_idx, &from_idx, &cost, &throwaway1, &throwaway2);
+        else
+            ret = fscanf(fp, "%d %d %d %d %d \n", &from_idx, &to_idx, &cost, &throwaway1, &throwaway2);
+
+        if (ret == ERROR_EOF)
+            break;
+        else
+            graph_insert_edge(graph, from_idx, to_idx, cost);
     }
 
     fclose(fp);
