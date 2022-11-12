@@ -11,14 +11,6 @@
 #define NODE_UNVISITED -1
 #define NODE_START -2
 
-/* Structs */
-
-/* ad-hoc datastructure to store information given by performing dijkstra */
-struct shortest_path {
-    int previous_idx;
-    int total_cost;
-};
-
 /* Methods */
 
 /* Dijkstra method */

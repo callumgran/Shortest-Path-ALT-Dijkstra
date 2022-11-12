@@ -46,6 +46,12 @@ struct graph_t {
     int edge_count;
 };
 
+/* Ad-hoc datastructure to store information given by performing a pathfinding method. */
+struct shortest_path {
+    int previous_idx;
+    int total_cost;
+};
+
 /* Methods */
 
 /* Method to print a graph. */
