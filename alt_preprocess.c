@@ -86,14 +86,14 @@ void preprocess(char *node_file, char *edge_file)
 
     char **output_files = malloc(sizeof(char *) * 6);
     for (int i = 0; i < 6; i++)
-        output_files[i] = malloc(sizeof(char) * 32);
+        output_files[i] = malloc(sizeof(char) * 64);
 
-    strncpy(output_files[0], "1rev.txt", 32);
-    strncpy(output_files[1], "1cor.txt", 32);
-    strncpy(output_files[2], "2rev.txt", 32);
-    strncpy(output_files[3], "2cor.txt", 32);
-    strncpy(output_files[4], "3rev.txt", 32);
-    strncpy(output_files[5], "3cor.txt", 32);
+    strncpy(output_files[0], "preprocessed-files/1rev", 64);
+    strncpy(output_files[1], "preprocessed-files/1cor", 64);
+    strncpy(output_files[2], "preprocessed-files/2rev", 64);
+    strncpy(output_files[3], "preprocessed-files/2cor", 64);
+    strncpy(output_files[4], "preprocessed-files/3rev", 64);
+    strncpy(output_files[5], "preprocessed-files/3cor", 64);
     
     n_threads = 0;
 
@@ -126,4 +126,9 @@ void preprocess(char *node_file, char *edge_file)
     elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
     printf("Time used for the rest was %f s.\n", elapsed);
     graph_free(&graph);
+
+    for (int i = 0; i < 6; i++)
+        free(output_files[i]);
+
+    free(output_files);
 }

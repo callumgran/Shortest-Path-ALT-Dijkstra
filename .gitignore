@@ -56,3 +56,6 @@ dkms.conf
 
 # output file
 alt-dijkstra
+
+# preprocessed files
+.preprocessed-files/

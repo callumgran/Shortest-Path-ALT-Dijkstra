@@ -6,6 +6,7 @@
 
 #include "graph.h"
 #include "astar.h"
+#include "heap_queue.h"
 
 static void heapq_push_node(struct heapq_t *hq, int node, int cost_from_start_node)
 {
