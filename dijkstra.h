@@ -22,3 +22,5 @@ void shortest_path_print(struct shortest_path *sp, int node_count);
 
 /* Initializing function to do dijkstra's algorithm with data. */
 void do_dijkstra(char *node_file, char *edge_file, int starting_node);
+
+#endif
