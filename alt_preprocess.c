@@ -19,7 +19,7 @@ static void write_distances_to_file(struct shortest_path *sp,
                                     int start_node)
 {
     FILE *output;
-    output = fopen(ti->name, "w");
+    output = fopen(ti->name, "wb");
 
     if (output == NULL) {
         fprintf(stderr, "could not open file :(");

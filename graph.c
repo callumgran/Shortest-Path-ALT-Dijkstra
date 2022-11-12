@@ -7,7 +7,6 @@
 #include "io_handling.h"
 
 /* ---------- graph functions ---------- */
-
 void graph_insert_node(struct graph_t *graph, int node_idx, double latitude, double longitude)
 {
     struct node_t *node = malloc(sizeof(struct node_t));

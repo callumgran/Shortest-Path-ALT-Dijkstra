@@ -11,14 +11,6 @@
 #define NODE_UNVISITED -1
 #define NODE_START -2
 
-/* Structs */
-
-/* ad-hoc datastructure to store information given by performing dijkstra */
-struct shortest_path {
-    int previous_idx;
-    int total_cost;
-};
-
 /* Methods */
 
 /* Dijkstra method */
@@ -30,5 +22,3 @@ void shortest_path_print(struct shortest_path *sp, int node_count);
 
 /* Initializing function to do dijkstra's algorithm with data. */
 void do_dijkstra(char *node_file, char *edge_file, int starting_node);
-
-#endif
