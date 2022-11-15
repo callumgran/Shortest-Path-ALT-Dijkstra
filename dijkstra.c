@@ -3,63 +3,66 @@
 #include <stdbool.h>
 #include <string.h>
 #include <assert.h>
+#include <time.h>
 
 #include "heap_queue.h"
 #include "graph.h"
 #include "dijkstra.h"
 
-static void heapq_push_node(struct heapq_t *hq, int node, int cost_from_start_node)
+static void heapq_push_node(struct heapq_t *hq, int node, int total_cost)
 {
     struct node_info_t *ni = malloc(sizeof(struct node_info_t));
     ni->node_idx = node;
-    ni->cost_from_start_node = cost_from_start_node;
+    ni->total_cost = total_cost;
     heapq_push(hq, ni);
 }
 
-
 static bool compare(void *a, void *b)
 {
-    return ((struct edge_t *)a)->cost > ((struct edge_t *)b)->cost;
+    return ((struct node_info_t *)a)->total_cost > ((struct node_info_t *)b)->total_cost;
 }
 
-/* ---------- dijsktra implementation ---------- */
-struct shortest_path *dijkstra(struct graph_t *graph, int start_node)
+static struct prev_t *malloc_prev(int i)
+{
+    struct prev_t *prev = (struct prev_t *)(malloc(sizeof(struct prev_t)));
+    prev->dist = INF;
+    return prev;
+}
+
+static void init_prev(struct graph_t *graph, int start){
+    for (int i = 0; i < graph->node_count; i++) {
+        graph->n_list[i].d = malloc_prev(i);
+    }
+    graph->n_list[start].d->dist = 0;
+}
+
+/* ---------- dijsktra implementations ---------- */
+void dijkstra_pre_process(struct graph_t *graph, int start_node)
 {
     bool visited[graph->node_count];
     memset(visited, false, sizeof(bool) * graph->node_count);
     struct heapq_t *hq = heapq_malloc(compare);
-    struct shortest_path *sp = malloc(sizeof(struct shortest_path) * graph->node_count);
-    /* set initial cost to be as large as possible */
-    for (int i = 0; i < graph->node_count; i++) {
-        sp[i].total_cost = INF;
-        sp[i].previous_idx = NODE_UNVISITED;
-    }
+    init_prev(graph, start_node);
 
-    sp[start_node].total_cost = 0;
-    sp[start_node].previous_idx = NODE_START;
     heapq_push_node(hq, start_node, 0);
 
-    struct edge_t *neighbour;
+    struct node_t *curr;
     struct node_info_t *ni;
-    while ((ni = (struct node_info_t *)heapq_pop(hq)) != NULL) {
-        visited[ni->node_idx] = true;
-        neighbour = graph->neighbour_list[ni->node_idx];
+    while ((ni = (struct node_info_t *)heapq_pop(hq))) {
 
-        /* check all connected neighbours of the current node */
-        while (neighbour != NULL) {
-            /* if a node is already visited, we can't find a shorter path */
-            if (visited[neighbour->to_idx]) {
-                neighbour = neighbour->next;
+        visited[ni->node_idx] = true;
+            
+        curr = &graph->n_list[ni->node_idx];
+        for (struct edge_t *edge = curr->first_edge; edge; edge = edge->next_edge) {
+            if (visited[edge->to_node->node_idx])
                 continue;
+
+            int new_cost = curr->d->dist + edge->cost;
+            if (edge->to_node->d->dist > new_cost) {
+                edge->to_node->d->dist = new_cost;
+                edge->to_node->d->prev = curr;
+                heapq_push_node(hq, edge->to_node->node_idx, new_cost);
             }
-            int new_cost = sp[ni->node_idx].total_cost + neighbour->cost;
-            /* update shortest path is newly calculated cost is less than previously calcualted */
-            if (new_cost < sp[neighbour->to_idx].total_cost) {
-                sp[neighbour->to_idx].previous_idx = ni->node_idx;
-                sp[neighbour->to_idx].total_cost = new_cost;
-                heapq_push_node(hq, neighbour->to_idx, new_cost);
-            }
-            neighbour = neighbour->next;
         }
         /* 
          * why free? heapq_pop() returns a malloced node that would otherwise be lost if it was not
@@ -69,35 +72,58 @@ struct shortest_path *dijkstra(struct graph_t *graph, int start_node)
     }
 
     heapq_free(hq);
-    return sp;
 }
 
-void shortest_path_print(struct shortest_path *sp, int node_count)
+
+int dijkstra(struct graph_t *graph, int start_node, int end_node)
 {
-    printf("[node] [previous node] [cost]\n");
-    printf("-----------------------------------\n");
-    for (int i = 0; i < node_count; i++) {
-        printf("%d\t", i);
-        if (sp[i].previous_idx == NODE_START) {
-            printf("start\n");
-            continue;
-        } else if (sp[i].previous_idx == NODE_UNVISITED) {
-            printf("unreachable\n");
-            continue;
-        } else {
-            printf("%d\t", sp[i].previous_idx);
-        }
+    bool visited[graph->node_count];
+    memset(visited, false, sizeof(bool) * graph->node_count);
+    struct heapq_t *hq = heapq_malloc(compare);
+    init_prev(graph, start_node);
 
-        if (sp[i].total_cost == INF)
-            printf("ERROR: visited node has total_cost set to infinity\n");
-        else
-            printf("%d\n", sp[i].total_cost);
+    heapq_push_node(hq, start_node, 0);
+
+    struct node_t *curr;
+    struct node_info_t *ni;
+    int nodes_checked = 0;
+    while ((ni = (struct node_info_t *)heapq_pop(hq))) {
+        nodes_checked++;
+        visited[ni->node_idx] = true;
+
+        if (visited[end_node]) {
+            free(ni);
+            break;
+        }
+            
+        curr = &graph->n_list[ni->node_idx];
+        for (struct edge_t *edge = curr->first_edge; edge; edge = edge->next_edge) {
+            if (visited[edge->to_node->node_idx])
+                continue;
+
+            int new_cost = curr->d->dist + edge->cost;
+            if (edge->to_node->d->dist > new_cost) {
+                edge->to_node->d->dist = new_cost;
+                edge->to_node->d->prev = curr;
+                heapq_push_node(hq, edge->to_node->node_idx, new_cost);
+            }
+        }
+        /* 
+         * why free? heapq_pop() returns a malloced node that would otherwise be lost if it was not
+         * freed here 
+         */
+        free(ni);
     }
+
+    heapq_free(hq);
+
+    return nodes_checked;
 }
 
-void do_dijkstra(char *node_file, char *edge_file, int starting_node)
+void do_dijkstra(char *node_file, char *edge_file, int starting_node, int end_node)
 {
     struct graph_t graph;
+    clock_t t;
     bool err;
     err = parse_node_file(node_file, &graph);
     if (err)
@@ -116,8 +142,30 @@ void do_dijkstra(char *node_file, char *edge_file, int starting_node)
     printf("Dijkstra's algorithm on file node file '%s' and edge file '%s' using %d as starting \
             node.\n\n", node_file, edge_file, starting_node);
 #endif
-    struct shortest_path *sp = dijkstra(&graph, starting_node);
-    shortest_path_print(sp, graph.node_count);
+    t = clock();
+    int nodes_checked = dijkstra(&graph, starting_node, end_node);
+    t = clock() - t;
+    double time_taken = ((double)t)/(CLOCKS_PER_SEC/1000);
+
+    printf("Nodes checked: %d \n", nodes_checked);
+    printf("Driving time in centi-seconds: %d\n", graph.n_list[end_node].d->dist);
+    int hours = (graph.n_list[end_node].d->dist) / 360000;
+    int mins = (graph.n_list[end_node].d->dist - (hours * 360000))/6000;
+    int secs = (graph.n_list[end_node].d->dist - (hours * 360000) - (mins * 6000))/100;
+    
+    printf("Driving time: %d:%d:%d\n", hours, mins, secs);
+
+    struct node_t *node = &graph.n_list[end_node];
+    
+    while (node->node_idx != starting_node) {
+        printf("%d <- ", node->node_idx);
+        node = node->d->prev;
+    }
+    
+    printf("%d", starting_node);
+    printf("\n");
+
+    printf("Time used for Dijkstra: %f ms \n", time_taken);
+
     graph_free(&graph);
-    free(sp);
 }

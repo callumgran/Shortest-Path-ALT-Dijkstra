@@ -13,7 +13,7 @@ int n_threads;
 pthread_mutex_t t_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t t_cond = PTHREAD_COND_INITIALIZER;
 
-static void write_distances_to_file(struct shortest_path *sp, 
+static void write_distances_to_file(struct graph_t *graph, 
                                     struct thread_data_t *ti, 
                                     int node_count, 
                                     int start_node)
@@ -27,8 +27,8 @@ static void write_distances_to_file(struct shortest_path *sp,
     }
 
     for (int i = 0; i < node_count; i++)
-        fwrite(&sp[i].total_cost, 4, 1, output);
-    
+        fwrite(&graph->n_list[i].d->dist, 4, 1, output);
+
     fclose(output);
 }
 
@@ -45,11 +45,10 @@ static void *dijkstra_thread(void *arg)
     else
         graph = *graph_copy(ti->graph);
 
-    struct shortest_path *sp = dijkstra(&graph, ti->start_node);
+    dijkstra_pre_process(&graph, ti->start_node);
 
-    write_distances_to_file(sp, ti, graph.node_count, ti->start_node);
+    write_distances_to_file(&graph, ti, graph.node_count, ti->start_node);
 
-    free(sp);
     graph_free(&graph);
     free(ti->name);
     free(arg);

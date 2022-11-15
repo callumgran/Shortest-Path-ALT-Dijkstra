@@ -15,9 +15,9 @@
 #define START_THREADS NUMBER_OF_LANDMARKS << 1
 
 /* Landmark node indexes */
-#define LANDMARK_ONE 1
-#define LANDMARK_TWO 2
-#define LANDMARK_THREE 3
+#define LANDMARK_ONE 11111
+#define LANDMARK_TWO 55555
+#define LANDMARK_THREE 77777
 
 /* Structs */
 struct thread_data_t {
