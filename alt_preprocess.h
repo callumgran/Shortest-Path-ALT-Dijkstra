@@ -15,9 +15,9 @@
 #define START_THREADS NUMBER_OF_LANDMARKS << 1
 
 /* Landmark node indexes */
-#define LANDMARK_ONE 11111
-#define LANDMARK_TWO 55555
-#define LANDMARK_THREE 77777
+#define LANDMARK_ONE 412001 //Kuusamo
+#define LANDMARK_TWO 7038590 //Malmö
+#define LANDMARK_THREE 7425499 //Trondheim
 
 /* Structs */
 struct thread_data_t {

@@ -7,6 +7,7 @@
 
 #include "heap_queue.h"
 #include "graph.h"
+#include "io_handling.h"
 #include "astar.h"
 
 static void heapq_push_node(struct heapq_t *hq, int node, int total_cost)
@@ -34,58 +35,6 @@ static void init_prev(struct graph_t *graph, int start){
         graph->n_list[i].d = malloc_prev(i);
     }
     graph->n_list[start].d->dist = 0;
-}
-
-/* Method to get the length of a file and it's contents. */
-static struct file_data_t *get_file_data(FILE *input)
-{
-    struct file_data_t *res = (struct file_data_t *)
-                                (malloc(sizeof(struct file_data_t)));
-
-    fseek(input, 0, SEEK_END);
-    res->data_len = ftell(input);
-    rewind(input);
-    res->data = (char *)(malloc(res->data_len));
-    size_t ret = fread(res->data, res->data_len, 1, input);
-
-    if (ret != 1)
-        return NULL;
-
-    return res;
-}
-
-/* Method to create a 2d array from lists of files containing landmark distances. */
-static void get_distance_list(FILE* input, char **file_names, int **arr, int landmarks)
-{
-    union byte_int_conv byte_int_conv;
-
-    for (int i = 0; i < landmarks; i++) {
-
-        input = fopen(file_names[i], "rb");
-
-        if (input == NULL) {
-            fprintf(stderr, "could not open file :(");
-            exit(1);
-        }
-
-        struct file_data_t *fd = get_file_data(input);
-
-        fclose(input);
-        
-        arr[i] = (int *)(malloc(fd->data_len));
-
-        int k = 0; int l = 0;
-        for (int j = 0; j < fd->data_len; j++) {
-            byte_int_conv.bytes[l++] = fd->data[j];
-            if (l == 4) {
-                arr[i][k++] = byte_int_conv.c;
-                l = 0;
-            }
-        }
-
-        free(fd->data);
-        free(fd);
-    }
 }
 
 /* Estimated distance functions */

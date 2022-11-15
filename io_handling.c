@@ -3,6 +3,58 @@
 #include <string.h>
 #include "io_handling.h"
 
+/* Method to get the length of a file and it's contents. */
+struct file_data_t *get_file_data(FILE *input)
+{
+    struct file_data_t *res = (struct file_data_t *)
+                                (malloc(sizeof(struct file_data_t)));
+
+    fseek(input, 0, SEEK_END);
+    res->data_len = ftell(input);
+    rewind(input);
+    res->data = (char *)(malloc(res->data_len));
+    size_t ret = fread(res->data, res->data_len, 1, input);
+
+    if (ret != 1)
+        return NULL;
+
+    return res;
+}
+
+/* Method to create a 2d array from lists of files containing landmark distances. */
+void get_distance_list(FILE* input, char **file_names, int **arr, int landmarks)
+{
+    union byte_int_conv byte_int_conv;
+
+    for (int i = 0; i < landmarks; i++) {
+
+        input = fopen(file_names[i], "rb");
+
+        if (input == NULL) {
+            fprintf(stderr, "could not open file :(");
+            exit(1);
+        }
+
+        struct file_data_t *fd = get_file_data(input);
+
+        fclose(input);
+        
+        arr[i] = (int *)(malloc(fd->data_len));
+
+        int k = 0; int l = 0;
+        for (int j = 0; j < fd->data_len; j++) {
+            byte_int_conv.bytes[l++] = fd->data[j];
+            if (l == 4) {
+                arr[i][k++] = byte_int_conv.c;
+                l = 0;
+            }
+        }
+
+        free(fd->data);
+        free(fd);
+    }
+}
+
 static char *f_next_item(FILE *fp)
 {
     char    ch;
@@ -58,17 +110,17 @@ int f_next_int(FILE *fp)
     return ret;
 }
 
-double f_next_double(FILE *fp)
+float f_next_float(FILE *fp)
 {
     char        *buf;
-    char        *strtodp;
-    double      ret;
+    char        *strtofp;
+    float      ret;
     
     buf = f_next_item(fp);
     if (buf == NULL)
         return ERROR_EOF;
 
-    ret = strtod(buf, &strtodp);
+    ret = atof(buf);
     free(buf);
     return ret;
 }

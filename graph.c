@@ -7,7 +7,7 @@
 #include "io_handling.h"
 
 /* ---------- graph functions ---------- */
-void graph_insert_node(struct graph_t *graph, int node_idx, double latitude, double longitude)
+void graph_insert_node(struct graph_t *graph, int node_idx, float latitude, float longitude)
 {
     struct node_t *node = malloc(sizeof(struct node_t));
     node->node_idx = node_idx;
@@ -108,8 +108,8 @@ bool parse_node_file(char *file_name, struct graph_t *graph)
 
     while (true) {
         int node_idx = f_next_int(fp);
-        double latitude = f_next_double(fp);
-        double longitude = f_next_double(fp);
+        float latitude = f_next_float(fp);
+        float longitude = f_next_float(fp);
         if (node_idx == ERROR_EOF || latitude == ERROR_EOF || longitude == ERROR_EOF)
             break;
         
@@ -117,6 +117,36 @@ bool parse_node_file(char *file_name, struct graph_t *graph)
     }
 
     fclose(fp);
+    return false;
+}
+
+bool parse_node_file_2(char *file_name, struct graph_t *graph)
+{
+    FILE *fp;
+    fp = fopen(file_name, "r");
+    if (fp == NULL)
+        return true;
+
+    int ret = fscanf(fp, "%d\n", &graph->node_count);
+
+    if (ret == ERROR_EOF || graph->node_count < 1)
+        return true;
+
+    graph->n_list = (struct node_t *)(malloc(graph->node_count * sizeof(struct node_t)));
+
+    while (true) {
+        int node_idx;
+        float latitude;
+        float longitude;
+        ret = fscanf(fp, "%d %f %f \n", &node_idx, &latitude, &longitude);
+        if (ret == ERROR_EOF)
+            break;
+
+        graph_insert_node(graph, node_idx, latitude, longitude);
+    }
+
+    fclose(fp);
+
     return false;
 }
 
@@ -142,6 +172,37 @@ bool parse_edge_file(char *file_name, struct graph_t *graph)
         if (to_idx == ERROR_EOF || from_idx == ERROR_EOF || cost == ERROR_EOF)
             break;
 
+        graph_insert_edge(graph, from_idx, to_idx, cost);
+    }
+
+    fclose(fp);
+    return false;
+}
+
+bool parse_edge_file_2(char *file_name, struct graph_t *graph)
+{
+    FILE *fp;
+    fp = fopen(file_name, "r");
+    if (fp == NULL)
+        return true;
+
+    int ret = fscanf(fp, "%d \n", &graph->edge_count);
+
+    if (ret == ERROR_EOF || graph->edge_count < 1)
+        return true;
+
+    assert(graph->node_count > 0);
+
+    while (true) {
+        int from_idx;
+        int to_idx;
+        int cost;
+        int throwaway1;
+        int throwaway2;
+        ret = fscanf(fp, "%d %d %d %d %d \n", &from_idx, &to_idx, &cost, &throwaway1, &throwaway2);
+        if (ret == ERROR_EOF)
+            break;
+        
         graph_insert_edge(graph, from_idx, to_idx, cost);
     }
 

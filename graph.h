@@ -10,8 +10,8 @@
 /* Structs */
 struct node_t {
     int node_idx;
-    double latitude;
-    double longitude;
+    float latitude;
+    float longitude;
     struct edge_t *first_edge;
     struct prev_t *d;
 };
@@ -44,7 +44,7 @@ struct graph_t {
 void graph_print(struct graph_t *graph);
 
 /* Method to add a node to a graph. */
-void graph_insert_node(struct graph_t *graph, int node_idx, double latitude, double longitude);
+void graph_insert_node(struct graph_t *graph, int node_idx, float latitude, float longitude);
 
 /* Method to add an edge to a graph */
 void graph_insert_edge(struct graph_t *graph, int from_idx, int to_idx, int cost);
@@ -56,9 +56,13 @@ void graph_free(struct graph_t *graph);
 /* Return true if an error occurs. */
 bool parse_node_file(char *file_name, struct graph_t *graph);
 
+bool parse_node_file_2(char *file_name, struct graph_t *graph);
+
 /* Method to parse edges into graph from file. */
 /* Return true if an error occurs. */
 bool parse_edge_file(char *file_name, struct graph_t *graph);
+
+bool parse_edge_file_2(char *file_name, struct graph_t *graph);
 
 /* Method for transposing a graph. */
 struct graph_t *graph_transpose(struct graph_t *graph);

@@ -74,6 +74,52 @@ void dijkstra_pre_process(struct graph_t *graph, int start_node)
     heapq_free(hq);
 }
 
+int *dijkstra_POI(struct graph_t *graph, int start_node, int node_type)
+{
+    int *nodes = (int *)(calloc(8, sizeof(int)));
+    int nodes_size = 0;
+
+    bool visited[graph->node_count];
+    memset(visited, false, sizeof(bool) * graph->node_count);
+    struct heapq_t *hq = heapq_malloc(compare);
+    init_prev(graph, start_node);
+
+    heapq_push_node(hq, start_node, 0);
+
+    struct node_t *curr;
+    struct node_info_t *ni;
+    while ((ni = (struct node_info_t *)heapq_pop(hq))) {
+        nodes_size++;
+        visited[ni->node_idx] = true;
+
+        if (ni->node_idx & node_type == 0) {
+            free(ni);
+            break;
+        }
+            
+        curr = &graph->n_list[ni->node_idx];
+        for (struct edge_t *edge = curr->first_edge; edge; edge = edge->next_edge) {
+            if (visited[edge->to_node->node_idx])
+                continue;
+
+            int new_cost = curr->d->dist + edge->cost;
+            if (edge->to_node->d->dist > new_cost) {
+                edge->to_node->d->dist = new_cost;
+                edge->to_node->d->prev = curr;
+                heapq_push_node(hq, edge->to_node->node_idx, new_cost);
+            }
+        }
+        /* 
+         * why free? heapq_pop() returns a malloced node that would otherwise be lost if it was not
+         * freed here 
+         */
+        free(ni);
+    }
+
+    heapq_free(hq);
+
+    return nodes;
+}
 
 int dijkstra(struct graph_t *graph, int start_node, int end_node)
 {
