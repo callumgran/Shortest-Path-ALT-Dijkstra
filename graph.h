@@ -14,6 +14,8 @@ struct node_t {
     float longitude;
     struct edge_t *first_edge;
     struct prev_t *d;
+    int code;
+    char *name;
 };
 
 struct prev_t {
@@ -43,6 +45,9 @@ struct graph_t {
 /* Method to print a graph. */
 void graph_print(struct graph_t *graph);
 
+/* Method to add a position of interest to a graph. */
+void graph_insert_poi(struct graph_t *graph, int node_idx, int node_code, char* name);
+
 /* Method to add a node to a graph. */
 void graph_insert_node(struct graph_t *graph, int node_idx, float latitude, float longitude);
 
@@ -56,13 +61,13 @@ void graph_free(struct graph_t *graph);
 /* Return true if an error occurs. */
 bool parse_node_file(char *file_name, struct graph_t *graph);
 
-bool parse_node_file_2(char *file_name, struct graph_t *graph);
-
 /* Method to parse edges into graph from file. */
 /* Return true if an error occurs. */
 bool parse_edge_file(char *file_name, struct graph_t *graph);
 
-bool parse_edge_file_2(char *file_name, struct graph_t *graph);
+/* Method to parse points of interest into graph from file. */
+/* Return true if an error occurs. */
+bool parse_poi_file(char *file_name, struct graph_t *graph);
 
 /* Method for transposing a graph. */
 struct graph_t *graph_transpose(struct graph_t *graph);

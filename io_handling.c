@@ -3,7 +3,6 @@
 #include <string.h>
 #include "io_handling.h"
 
-/* Method to get the length of a file and it's contents. */
 struct file_data_t *get_file_data(FILE *input)
 {
     struct file_data_t *res = (struct file_data_t *)
@@ -21,9 +20,10 @@ struct file_data_t *get_file_data(FILE *input)
     return res;
 }
 
-/* Method to create a 2d array from lists of files containing landmark distances. */
-void get_distance_list(FILE* input, char **file_names, int **arr, int landmarks)
+int** get_distance_list(FILE* input, char **file_names, int landmarks)
 {
+    int **arr = malloc(landmarks * sizeof(int *));
+
     union byte_int_conv byte_int_conv;
 
     for (int i = 0; i < landmarks; i++) {
@@ -53,6 +53,8 @@ void get_distance_list(FILE* input, char **file_names, int **arr, int landmarks)
         free(fd->data);
         free(fd);
     }
+
+    return arr;
 }
 
 static char *f_next_item(FILE *fp)
@@ -93,6 +95,50 @@ static char *f_next_item(FILE *fp)
 
 error_eof:
     free(buf);
+    return NULL;
+}
+
+char *f_next_str(FILE *fp)
+{
+    char    ch;
+    char    buf[128];
+    int     i = 0;
+
+    while ((ch = fgetc(fp)) == ' ');
+
+    if (ch == EOF)
+        goto error_eof;
+
+    ch = fgetc(fp);
+
+    buf[i++] = ch;
+
+    do {
+        ch = fgetc(fp);
+        if (ch == '"') {
+            buf[i++] = 0;
+            break;
+        } else if (ch == '\n') {
+            break;
+        } else if (i >= 128) {
+            fprintf(stderr, "Error parsing file: node longer than 128 chars\n");
+            exit(1);
+            break;
+        }
+
+        buf[i++] = ch;
+    } while (ch != EOF);
+
+    if (ch == EOF)
+        goto error_eof;
+    
+    char *result = (char *)(malloc(i * sizeof(char)));
+    for (int j = 0; j < i; j++)
+        result[j] = buf[j];
+
+    return result;
+
+error_eof:
     return NULL;
 }
 

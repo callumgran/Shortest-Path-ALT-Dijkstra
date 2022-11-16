@@ -7,12 +7,21 @@
 #include "io_handling.h"
 
 /* ---------- graph functions ---------- */
+
+void graph_insert_poi(struct graph_t *graph, int node_idx, int node_code, char* name)
+{
+    graph->n_list[node_idx].code = node_code;
+    graph->n_list[node_idx].name = strdup(name);
+}
+
 void graph_insert_node(struct graph_t *graph, int node_idx, float latitude, float longitude)
 {
     struct node_t *node = malloc(sizeof(struct node_t));
     node->node_idx = node_idx;
     node->latitude = latitude;
     node->longitude = longitude;
+    node->name = NULL;
+    node->code = 0;
 
     graph->n_list[node_idx] = *node;
 }
@@ -46,7 +55,7 @@ void graph_print(struct graph_t *graph)
 struct graph_t *graph_transpose(struct graph_t *graph)
 {
     struct graph_t *t_graph = (struct graph_t *)(malloc(sizeof(struct graph_t)));
-    t_graph->n_list = (struct node_t *)(calloc(graph->node_count, sizeof(struct node_t)));
+    t_graph->n_list = (struct node_t *)(malloc(graph->node_count * sizeof(struct node_t)));
     t_graph->node_count = graph->node_count;
     t_graph->edge_count = graph->edge_count;
 
@@ -63,7 +72,7 @@ struct graph_t *graph_transpose(struct graph_t *graph)
 struct graph_t *graph_copy(struct graph_t *graph)
 {
     struct graph_t *c_graph = (struct graph_t *)(malloc(sizeof(struct graph_t)));
-    c_graph->n_list = (struct node_t *)(calloc(graph->node_count, sizeof(struct node_t)));
+    c_graph->n_list = (struct node_t *)(malloc(graph->node_count * sizeof(struct node_t)));
     c_graph->node_count = graph->node_count;
     c_graph->edge_count = graph->edge_count;
 
@@ -87,6 +96,8 @@ void graph_free(struct graph_t *graph)
             edge_i = edge_i->next_edge;
             free(prev);
         }
+        if (graph->n_list[i].name != NULL)
+            free(graph->n_list[i].name);
         free(graph->n_list[i].d);
     }
     free(graph->n_list);
@@ -120,36 +131,6 @@ bool parse_node_file(char *file_name, struct graph_t *graph)
     return false;
 }
 
-bool parse_node_file_2(char *file_name, struct graph_t *graph)
-{
-    FILE *fp;
-    fp = fopen(file_name, "r");
-    if (fp == NULL)
-        return true;
-
-    int ret = fscanf(fp, "%d\n", &graph->node_count);
-
-    if (ret == ERROR_EOF || graph->node_count < 1)
-        return true;
-
-    graph->n_list = (struct node_t *)(malloc(graph->node_count * sizeof(struct node_t)));
-
-    while (true) {
-        int node_idx;
-        float latitude;
-        float longitude;
-        ret = fscanf(fp, "%d %f %f \n", &node_idx, &latitude, &longitude);
-        if (ret == ERROR_EOF)
-            break;
-
-        graph_insert_node(graph, node_idx, latitude, longitude);
-    }
-
-    fclose(fp);
-
-    return false;
-}
-
 bool parse_edge_file(char *file_name, struct graph_t *graph)
 {
     FILE *fp;
@@ -179,33 +160,31 @@ bool parse_edge_file(char *file_name, struct graph_t *graph)
     return false;
 }
 
-bool parse_edge_file_2(char *file_name, struct graph_t *graph)
+bool parse_poi_file(char *file_name, struct graph_t *graph)
 {
     FILE *fp;
     fp = fopen(file_name, "r");
     if (fp == NULL)
         return true;
 
-    int ret = fscanf(fp, "%d \n", &graph->edge_count);
-
-    if (ret == ERROR_EOF || graph->edge_count < 1)
+    int poi_count = f_next_int(fp);
+    if (poi_count == ERROR_EOF || poi_count < 1)
         return true;
 
-    assert(graph->node_count > 0);
-
     while (true) {
-        int from_idx;
-        int to_idx;
-        int cost;
-        int throwaway1;
-        int throwaway2;
-        ret = fscanf(fp, "%d %d %d %d %d \n", &from_idx, &to_idx, &cost, &throwaway1, &throwaway2);
-        if (ret == ERROR_EOF)
+        int node_idx = f_next_int(fp);
+        int node_code = f_next_int(fp);
+        char* name = f_next_str(fp);
+        void f_consume_line(FILE *fp);
+        if (node_idx == ERROR_EOF || node_code == ERROR_EOF || name == NULL)
             break;
-        
-        graph_insert_edge(graph, from_idx, to_idx, cost);
-    }
 
+        // printf("Code: %d Name: %s\n", node_code, name);
+        graph_insert_poi(graph, node_idx, node_code, name);
+    }
+    // printf("--------------------------------------\n");
+    // printf("DONE\n");
+    // printf("--------------------------------------\n");
     fclose(fp);
     return false;
 }

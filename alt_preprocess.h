@@ -11,19 +11,20 @@
 
 /* Defines */
 
-#define NUMBER_OF_LANDMARKS 3
-#define START_THREADS NUMBER_OF_LANDMARKS << 1
+#define NUMBER_OF_LANDMARKS 5
 
 /* Landmark node indexes */
-#define LANDMARK_ONE 412001 //Kuusamo
-#define LANDMARK_TWO 7038590 //Malmö
-#define LANDMARK_THREE 7425499 //Trondheim
+#define LANDMARK_ONE 5436444
+#define LANDMARK_TWO 2507642
+#define LANDMARK_THREE 1235456
+#define LANDMARK_FOUR 6857624
+#define LANDMARK_FIVE 4417787
 
 /* Structs */
 struct thread_data_t {
     struct graph_t *graph;
-    int start_node;
-    char *name;
+    int* landmarks;
+    char **names;
     bool reversed;
 };
 
