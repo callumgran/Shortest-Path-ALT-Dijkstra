@@ -1,8 +1,0 @@
-{
-    "files.associations": {
-        "io_handling.h": "c",
-        "pthread.h": "c",
-        "stdio.h": "c",
-        "pathfinding_utils.h": "c"
-    }
-}
