@@ -10,46 +10,34 @@
 /* Structs */
 struct node_t {
     int node_idx;
-    long latitude;
-    long longitude;
+    float latitude;
+    float longitude;
+    struct edge_t *first_edge;
+    struct prev_t *d;
+    int code;
+    char *name;
+};
+
+struct prev_t {
+    int dist;
+    struct node_t *prev;
 };
 
 struct node_info_t {
     int node_idx;
-    int cost_from_start_node;
+    int total_cost;
 };
 
 struct edge_t {
-    /* index/value/identifer of the node */
-    int from_idx;
-    int to_idx;
+    struct edge_t *next_edge;
+    struct node_t *to_node;
     int cost;
-    struct edge_t *next;
 };
 
 struct graph_t {
-    struct node_t **node_list;
-    /*
-     * every node in the node_list has a linked list of edges.
-     * the value at the index of the neighbour_list is the head of the linked list of edges.
-     *
-     * example:
-     * [0]      -> edge -> edge -> edge
-     * [1]      -> edge
-     * [2]      -> NULL
-     * [3]      -> edge -> edge
-     * ...
-     * [i]
-     */
-    struct edge_t **neighbour_list;
+    struct node_t *n_list;
     int node_count;
     int edge_count;
-};
-
-/* Ad-hoc datastructure to store information given by performing a pathfinding method. */
-struct shortest_path {
-    int previous_idx;
-    int total_cost;
 };
 
 /* Methods */
@@ -57,8 +45,11 @@ struct shortest_path {
 /* Method to print a graph. */
 void graph_print(struct graph_t *graph);
 
+/* Method to add a position of interest to a graph. */
+void graph_insert_poi(struct graph_t *graph, int node_idx, int node_code, char* name);
+
 /* Method to add a node to a graph. */
-void graph_insert_node(struct graph_t *graph, int node_idx, double latitude, double longitude);
+void graph_insert_node(struct graph_t *graph, int node_idx, float latitude, float longitude);
 
 /* Method to add an edge to a graph */
 void graph_insert_edge(struct graph_t *graph, int from_idx, int to_idx, int cost);
@@ -73,6 +64,10 @@ bool parse_node_file(char *file_name, struct graph_t *graph);
 /* Method to parse edges into graph from file. */
 /* Return true if an error occurs. */
 bool parse_edge_file(char *file_name, struct graph_t *graph);
+
+/* Method to parse points of interest into graph from file. */
+/* Return true if an error occurs. */
+bool parse_poi_file(char *file_name, struct graph_t *graph);
 
 /* Method for transposing a graph. */
 struct graph_t *graph_transpose(struct graph_t *graph);

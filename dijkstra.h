@@ -4,23 +4,20 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <string.h>
-#include <assert.h>
-
-/* Defines */
-#define INF (1 << 30)
-#define NODE_UNVISITED -1
-#define NODE_START -2
 
 /* Methods */
 
-/* Dijkstra method */
-/* Finds the shortest path from a to all other nodes in a graph from a start node. */
-struct shortest_path *dijkstra(struct graph_t *graph, int start_node);
+/* Dijkstra methods */
 
-/* Print method to show shortest path to each node in the graph. */
-void shortest_path_print(struct shortest_path *sp, int node_count);
+/* Dijkstra method for preprocessing. */
+/* Finds all nodes. */
+void dijkstra_pre_process(struct graph_t *graph, int start_node);
 
+/* Initializing function to do dijkstra's algorithm for points of interest with data. */
+void do_dijkstra_poi(char *node_file, char *edge_file, char* poi_file, 
+                        int start_node, int node_type, char* out_file);
+                        
 /* Initializing function to do dijkstra's algorithm with data. */
-void do_dijkstra(char *node_file, char *edge_file, int starting_node);
+void do_dijkstra(char *node_file, char *edge_file, int starting_node, int end_node);
 
 #endif

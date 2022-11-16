@@ -54,5 +54,6 @@ dkms.conf
 # Input Files
 *.txt
 
-# output file
+# Output files
 alt-dijkstra
+*.csv

@@ -3,79 +3,38 @@
 #include <stdbool.h>
 #include <string.h>
 #include <assert.h>
+#include <time.h>
 
+#include "heap_queue.h"
 #include "graph.h"
+#include "io_handling.h"
 #include "astar.h"
 
-static void heapq_push_node(struct heapq_t *hq, int node, int cost_from_start_node)
+static void heapq_push_node(struct heapq_t *hq, int node, int total_cost)
 {
     struct node_info_t *ni = malloc(sizeof(struct node_info_t));
     ni->node_idx = node;
-    ni->cost_from_start_node = cost_from_start_node;
+    ni->total_cost = total_cost;
     heapq_push(hq, ni);
 }
 
 static bool compare(void *a, void *b)
 {
-    return ((struct edge_t *)a)->cost > ((struct edge_t *)b)->cost;
+    return ((struct node_info_t *)a)->total_cost > ((struct node_info_t *)b)->total_cost;
 }
 
-/* Method to get the length of a file and it's contents. */
-static struct file_data_t *get_file_data(FILE *input)
+static struct prev_t *malloc_prev(int i)
 {
-    struct file_data_t *res = (struct file_data_t *)
-                                (malloc(sizeof(struct file_data_t)));
-
-    fseek(input, 0, SEEK_END);
-    res->data_len = ftell(input);
-    rewind(input);
-    res->data = (char *)(malloc(res->data_len));
-    fread(res->data, res->data_len, 1, input);
-
-    return res;
+    struct prev_t *prev = (struct prev_t *)(malloc(sizeof(struct prev_t)));
+    prev->dist = INF;
+    return prev;
 }
 
-/* Method to create a 2d array from lists of files containing landmark distances. */
-static int **get_distance_list(char **file_names, int landmarks)
-{
-    FILE *input;
-    int **arr;
-
-    arr = (int **)(malloc(landmarks * sizeof(int *)));
-
-    union byte_int_conv byte_int_conv;
-
-    for (int i = 0; i < landmarks; i++) {
-        size_t data_len;
-        char *data;
-
-        input = fopen(file_names[i], "rb");
-
-        if (input == NULL) {
-            fprintf(stderr, "could not open file :(");
-            free(arr);
-            exit(1);
-        }
-
-        struct file_data_t *fd = get_file_data(input);
-
-        fclose(input);
-        
-        /* The length of the data will always be 1/4 the amount of elements,
-        but as the elements are integeres, 4 bytes, we save our selves from division. */
-        arr[i] = (int *)(malloc(data_len));
-
-        int k = 0; int l;
-        for (int j = 0; j < data_len; j++) {
-            if (l == 3) {
-                arr[i][k++] = byte_int_conv.c;
-                l = 0;
-            }
-            byte_int_conv.bytes[l++] = data[j];
-        }
+static void init_prev(struct graph_t *graph, int start){
+    for (int i = 0; i < graph->node_count; i++) {
+        graph->n_list[i].d = malloc_prev(i);
     }
-
-    return arr;
+    graph->n_list[start].d->dist = 0;
 }
 
 /* Estimated distance functions */
@@ -85,7 +44,7 @@ static int **get_distance_list(char **file_names, int landmarks)
 static inline int est_dist_l_e(int **from_list, int i, int end_idx, int node_idx)
 {
     int dist = from_list[i][end_idx] - from_list[i][node_idx];
-    return dist > 0 ? dist : 0; 
+    return dist > 0 ? dist : 0;
 }
 
 /* Method that returns 0 or the the distance from the current node to the landmark 
@@ -93,64 +52,65 @@ static inline int est_dist_l_e(int **from_list, int i, int end_idx, int node_idx
 static inline int est_dist_e_l(int **to_list, int i, int end_idx, int node_idx)
 {
     int dist = to_list[i][node_idx] - to_list[i][end_idx];
-    return dist > 0 ? dist : 0; 
+    return dist > 0 ? dist : 0;
 }
 
 /* Method that returns the highest estimate found for the distance via triangulation. */
 static int est_dist(int **from_list, int **to_list, int end_idx, int node_idx)
 {   
     int est_dist = 0;
+    int tmp_est = 0;
+    
     for (int i = 0; i < 3; i++) {
-        int tmp_est = est_dist_l_e(from_list, i, node_idx, node_idx);
+        tmp_est = est_dist_l_e(from_list, i, end_idx, node_idx);
         if (tmp_est > est_dist)
             est_dist = tmp_est;
-        tmp_est = est_dist_e_l(to_list, i, node_idx, node_idx);
+        tmp_est = est_dist_e_l(to_list, i, end_idx, node_idx);
         if (tmp_est > est_dist)
             est_dist = tmp_est;
     }
+
     return est_dist;
 }
 
 /* A-star implementation */
-/* Todo: FIX the fucking method */
-struct shortest_path *astar(int **from_list, int **to_list, struct graph_t *graph, int start_node, int end_idx)
+int astar(struct graph_t *graph, int **from_list, int **to_list, int start_node, int end_node)
 {
     bool visited[graph->node_count];
     memset(visited, false, sizeof(bool) * graph->node_count);
     struct heapq_t *hq = heapq_malloc(compare);
-    struct shortest_path *sp = malloc(sizeof(struct shortest_path) * graph->node_count);
-    /* set initial cost to be as large as possible */
-    for (int i = 0; i < graph->node_count; i++) {
-        sp[i].total_cost = INF;
-        sp[i].previous_idx = NODE_UNVISITED;
-    }
-    
-    sp[start_node].total_cost = 0;
-    sp[start_node].previous_idx = NODE_START;
+    init_prev(graph, start_node);
 
-    heapq_push_node(hq, start_node, est_dist(from_list, to_list, end_idx, start_node));
+    heapq_push_node(hq, start_node, 0 + est_dist(from_list, to_list, end_node, start_node));
 
-    struct edge_t *neighbour;
+    struct node_t *curr;
     struct node_info_t *ni;
-    while ((ni = (struct node_info_t *)heapq_pop(hq)) != NULL) {
-        visited[ni->node_idx] = true;
-        neighbour = graph->neighbour_list[ni->node_idx];
+    int nodes_checked = 0;
 
-        /* check all connected neighbours of the current node */
-        while (neighbour != NULL) {
-            /* if a node is already visited, we can't find a shorter path */
-            if (visited[neighbour->to_idx]) {
-                neighbour = neighbour->next;
+    while ((ni = (struct node_info_t *)heapq_pop(hq))) {
+        nodes_checked++;
+        visited[ni->node_idx] = true;
+
+        if (visited[end_node]) {
+            free(ni);
+            break;
+        }
+
+        curr = &graph->n_list[ni->node_idx];
+
+        for (struct edge_t *edge = curr->first_edge; edge; edge = edge->next_edge) {
+
+            if (visited[edge->to_node->node_idx])
                 continue;
+
+            int new_cost = curr->d->dist + edge->cost;
+            if (edge->to_node->d->dist > new_cost) {
+                edge->to_node->d->dist = new_cost;
+                edge->to_node->d->prev = curr;
+                heapq_push_node(hq, edge->to_node->node_idx, (new_cost + est_dist(from_list, to_list, 
+                                                                end_node, edge->to_node->node_idx)));
             }
-            int new_cost = sp[ni->node_idx].total_cost + neighbour->cost;
-            /* update shortest path is newly calculated cost is less than previously calcualted */
-            if (new_cost < sp[neighbour->to_idx].total_cost) {
-                sp[neighbour->to_idx].previous_idx = ni->node_idx;
-                sp[neighbour->to_idx].total_cost = new_cost;
-                heapq_push_node(hq, neighbour->to_idx, new_cost);
-            }
-            neighbour = neighbour->next;
+
         }
         /* 
          * why free? heapq_pop() returns a malloced node that would otherwise be lost if it was not
@@ -160,5 +120,70 @@ struct shortest_path *astar(int **from_list, int **to_list, struct graph_t *grap
     }
 
     heapq_free(hq);
-    return sp;
+
+    return nodes_checked;
+}
+
+void do_astar(char *node_file, char *edge_file, int start_node, int end_node)
+{
+    FILE *input;
+    clock_t t;
+    char **from_files = malloc(sizeof(char *) * 6);
+    char **to_files = malloc(sizeof(char *) * 6);
+    for (int i = 0; i < 3; i++) {
+        from_files[i] = malloc(sizeof(char) * 32);
+        to_files[i] = malloc(sizeof(char) * 32);
+    }
+
+    strncpy(to_files[0], "1rev.txt", 32);
+    strncpy(to_files[1], "2rev.txt", 32);
+    strncpy(to_files[2], "3rev.txt", 32);
+    strncpy(from_files[0], "1cor.txt", 32);
+    strncpy(from_files[1], "2cor.txt", 32);
+    strncpy(from_files[2], "3cor.txt", 32);
+    
+    struct graph_t graph;
+
+    parse_node_file(node_file, &graph);
+    parse_edge_file(edge_file, &graph);
+
+    int **to_list = malloc(NUMBER_OF_LANDMARKS * sizeof(int *));
+    int **from_list = malloc(NUMBER_OF_LANDMARKS * sizeof(int *));
+
+    get_distance_list(input, to_files, to_list, NUMBER_OF_LANDMARKS);
+    get_distance_list(input, from_files, from_list, NUMBER_OF_LANDMARKS);
+
+    free(from_files);
+    free(to_files);
+
+    t = clock();
+    int nodes_checked = astar(&graph, from_list, to_list, start_node, end_node);
+    t = clock() - t;
+    double time_taken = ((double)t)/(CLOCKS_PER_SEC/1000);
+
+    printf("Nodes checked: %d \n", nodes_checked);
+    printf("Driving time in centi-seconds: %d\n", graph.n_list[end_node].d->dist);
+    int hours = (graph.n_list[end_node].d->dist) / 360000;
+    int mins = (graph.n_list[end_node].d->dist - (hours * 360000))/6000;
+    int secs = (graph.n_list[end_node].d->dist - (hours * 360000) - (mins * 6000))/100;
+    
+    printf("Driving time: %d:%d:%d\n", hours, mins, secs);
+
+    struct node_t *node = &graph.n_list[end_node];
+    while (node->node_idx != start_node) {
+        printf("%d <- ", node->node_idx);
+        node = node->d->prev;
+    }
+
+    printf("%d", start_node);
+    printf("\n");
+    printf("Time used for ALT: %f ms \n", time_taken);
+
+    for (int i = 0; i < NUMBER_OF_LANDMARKS; i++) {
+        free(to_list[i]);
+        free(from_list[i]);
+    }
+    
+    free(from_list);
+    free(to_list);
 }
