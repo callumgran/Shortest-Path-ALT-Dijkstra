@@ -3,6 +3,7 @@
 ## Compile
 In the linux terminal type: ./build.sh <br>
 After this to get the list of commands and their uses type: ./alt-dijkstra help<br>
+Note you may have to use 'chmod u+x' on build.sh. <br>
 
 ## Test files
 Use the following commands to get the node-, egde- and poi files. <br>
