@@ -22,7 +22,8 @@ static void write_distances_to_file(struct graph_t *graph,
     output = fopen(ti->names[idx], "wb");
 
     if (output == NULL) {
-        fprintf(stderr, "could not open file :(");
+        fprintf(stderr, "could not open preprocessed file. Are you sure you have preprocessed the\
+files?\n");
         exit(1);
     }
 

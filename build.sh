@@ -6,7 +6,7 @@ BUILD_CMD="gcc -o $OUT $FILES -l pthread"
 
 if [ "$1" = "debug" ]
 then
-    $BUILD_CMD -g -D DEBUG
+    $BUILD_CMD -g -D DEBUG && echo "$BUILD_CMD -g -D DEBUG"
 else
-    $BUILD_CMD -O3
+    $BUILD_CMD -O3 && echo "$BUILD_CMD"
 fi

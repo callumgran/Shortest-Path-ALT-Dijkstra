@@ -45,6 +45,8 @@ void print_dijkstra_instructions(char **argv)
 
 void print_help_instructions(char **argv)
 {
+    printf("Note: program assumes files noder.txt, kanter.txt and interessepkt.txt are present\
+in the current directory\n");
     print_preprocess_instructions(argv);
     putchar('\n');
     print_alt_instructions(argv);
