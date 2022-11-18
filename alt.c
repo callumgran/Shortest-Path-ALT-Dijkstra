@@ -16,7 +16,7 @@
     minus the distance from the landmark to the current node. */
 static inline int est_dist_l_e(int **from_list, int i, int end_idx, int node_idx)
 {
-    int dist = from_list[i][end_idx] - from_list[i][node_idx];
+    int dist = *(*(from_list + i) + end_idx) - *(*(from_list + i) + node_idx);
     return dist > 0 ? dist : 0;
 }
 
@@ -24,7 +24,7 @@ static inline int est_dist_l_e(int **from_list, int i, int end_idx, int node_idx
     minus the distance from the end to the landmark. */
 static inline int est_dist_e_l(int **to_list, int i, int end_idx, int node_idx)
 {
-    int dist = to_list[i][node_idx] - to_list[i][end_idx];
+    int dist = *(*(to_list + i) + node_idx) - *(*(to_list + i) + end_idx);
     return dist > 0 ? dist : 0;
 }
 
@@ -61,14 +61,14 @@ static int alt(struct graph_t *graph, int **from_list, int **to_list, int start_
     int nodes_checked = 0;
     while ((ni = (struct node_info_t *)heapq_pop(hq))->node_idx != end_node) {
         nodes_checked++;
-        visited[ni->node_idx] = true;
+        *(visited + ni->node_idx) = true;
 
-        for (struct edge_t *edge = graph->n_list[ni->node_idx].first_edge; edge; edge = edge->next_edge) {
-            if (!visited[edge->to_node->node_idx]) {
-                int new_cost = graph->n_list[ni->node_idx].d->dist + edge->cost;
+        for (struct edge_t *edge = (graph->n_list + ni->node_idx)->first_edge; edge; edge = edge->next_edge) {
+            if (!(*(visited + edge->to_node->node_idx))) {
+                int new_cost = (graph->n_list + ni->node_idx)->d->dist + edge->cost;
                 if (edge->to_node->d->dist > new_cost) {
                     edge->to_node->d->dist = new_cost;
-                    edge->to_node->d->prev = &graph->n_list[ni->node_idx];
+                    edge->to_node->d->prev = (graph->n_list + ni->node_idx);
                     heapq_push_node(hq, edge->to_node->node_idx, (new_cost + est_dist(from_list, to_list, 
                                                                     end_node, edge->to_node->node_idx)));
                 }
@@ -94,14 +94,14 @@ static char** get_from_files()
     char **from_files = malloc(sizeof(char *) * 8);
 
     for (int i = 0; i < NUMBER_OF_LANDMARKS; i++) {
-        from_files[i] = malloc(sizeof(char) * 32);
+        *(from_files + i) = malloc(sizeof(char) * 32);
     }
 
-    strncpy(from_files[0], "1cor.txt", 32);
-    strncpy(from_files[1], "2cor.txt", 32);
-    strncpy(from_files[2], "3cor.txt", 32);
-    strncpy(from_files[3], "4cor.txt", 32);
-    strncpy(from_files[4], "5cor.txt", 32);
+    strncpy(*(from_files), "1cor.txt", 32);
+    strncpy(*(from_files + 1), "2cor.txt", 32);
+    strncpy(*(from_files + 2), "3cor.txt", 32);
+    strncpy(*(from_files + 3), "4cor.txt", 32);
+    strncpy(*(from_files + 4), "5cor.txt", 32);
     return from_files;
 }
 
@@ -112,14 +112,14 @@ static char** get_to_files()
     char **to_files = malloc(sizeof(char *) * 8);
 
     for (int i = 0; i < NUMBER_OF_LANDMARKS; i++) {
-        to_files[i] = malloc(sizeof(char) * 32);
+        *(to_files + i) = malloc(sizeof(char) * 32);
     }
 
-    strncpy(to_files[0], "1rev.txt", 32);
-    strncpy(to_files[1], "2rev.txt", 32);
-    strncpy(to_files[2], "3rev.txt", 32);
-    strncpy(to_files[3], "4rev.txt", 32);
-    strncpy(to_files[4], "5rev.txt", 32);
+    strncpy(*(to_files), "1rev.txt", 32);
+    strncpy(*(to_files + 1), "2rev.txt", 32);
+    strncpy(*(to_files + 2), "3rev.txt", 32);
+    strncpy(*(to_files + 3), "4rev.txt", 32);
+    strncpy(*(to_files + 4), "5rev.txt", 32);
     return to_files;
 }
 
@@ -147,19 +147,19 @@ void do_alt(char *node_file, char *edge_file, int start_node, int end_node)
     double time_taken = ((double)t)/(CLOCKS_PER_SEC/1000);
 
     printf("Nodes checked: %d \n", nodes_checked);
-    printf("Driving time in centi-seconds: %d\n", graph.n_list[end_node].d->dist);
+    printf("Driving time in centi-seconds: %d\n", (graph.n_list + end_node)->d->dist);
     
-    print_centi_to_drive_time(graph.n_list[end_node].d->dist);
+    print_centi_to_drive_time((graph.n_list + end_node)->d->dist);
 
     write_path_to_file(&graph, end_node, start_node);
 
     printf("Time used for ALT: %f ms \n", time_taken);
 
     for (int i = 0; i < NUMBER_OF_LANDMARKS; i++) {
-        free(to_list[i]);
-        free(from_list[i]);
-        free(from_files[i]);
-        free(to_files[i]);
+        free(*(to_list + i));
+        free(*(from_list + i));
+        free(*(to_files + i));
+        free(*(from_files + i));
     }
 
     free(from_list);

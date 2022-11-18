@@ -27,9 +27,9 @@ struct prev_t *malloc_prev(int i)
 void init_prev(struct graph_t *graph, int start)
 {
     for (int i = 0; i < graph->node_count; i++) {
-        graph->n_list[i].d = malloc_prev(i);
+        (graph->n_list + i)->d = malloc_prev(i);
     }
-    graph->n_list[start].d->dist = 0;
+    (graph->n_list + start)->d->dist = 0;
 }
 
 void print_centi_to_drive_time(int centi)
@@ -63,7 +63,7 @@ void write_path_to_file(struct graph_t *graph, int end_node, int start_node)
 
     fp = fopen("path.csv", "w");
 
-    struct node_t *node = &graph->n_list[end_node];
+    struct node_t *node = (graph->n_list + end_node);
     while (node->node_idx != start_node) {
         fprintf(fp, "%.7f, %.7f \n", node->latitude, node->longitude);
         node = node->d->prev;
@@ -83,7 +83,7 @@ void write_poi_to_file(struct graph_t *graph, int* arr, int nodes, char* out_fil
 
     struct node_t *node;
     for (int i = 0; i < nodes; i++) {
-        node = &graph->n_list[arr[i]];
+        node = (graph->n_list + *(arr + i));
         fprintf(fp, "%.7f, %.7f \n", node->latitude, node->longitude);
     }
 

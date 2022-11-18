@@ -28,10 +28,10 @@ int** get_distance_list(FILE* input, char **file_names, int landmarks)
 
     for (int i = 0; i < landmarks; i++) {
 
-        input = fopen(file_names[i], "rb");
+        input = fopen(*(file_names + i), "rb");
 
         if (input == NULL) {
-            fprintf(stderr, "could not open file: '%s'\n", file_names[i]);
+            fprintf(stderr, "could not open file :(");
             exit(1);
         }
 
@@ -39,13 +39,13 @@ int** get_distance_list(FILE* input, char **file_names, int landmarks)
 
         fclose(input);
         
-        arr[i] = (int *)(malloc(fd->data_len));
+        *(arr + i) = (int *)(malloc(fd->data_len));
 
         int k = 0; int l = 0;
         for (int j = 0; j < fd->data_len; j++) {
-            byte_int_conv.bytes[l++] = fd->data[j];
+            *(byte_int_conv.bytes + l++) = *(fd->data + j);
             if (l == 4) {
-                arr[i][k++] = byte_int_conv.c;
+                *(*(arr + i) + k++) = byte_int_conv.c;
                 l = 0;
             }
         }
@@ -70,12 +70,12 @@ static char *f_next_item(FILE *fp)
     if (ch == EOF)
         goto error_eof;
 
-    buf[i++] = ch;
+    *(buf + i++) = ch;
 
     do {
         ch = fgetc(fp);
         if (ch == ' ' || ch == '\t') {
-            buf[i] = 0;
+            *(buf + i) = 0;
             break;
         } else if (ch == '\n') {
             break;
@@ -85,7 +85,7 @@ static char *f_next_item(FILE *fp)
             break;
         }
 
-        buf[i++] = ch;
+        *(buf + i++) = ch;
     } while (ch != EOF);
 
     if (ch == EOF)
@@ -111,12 +111,12 @@ char *f_next_str(FILE *fp)
 
     ch = fgetc(fp);
 
-    buf[i++] = ch;
+    *(buf + i++) = ch;
 
     do {
         ch = fgetc(fp);
         if (ch == '"') {
-            buf[i++] = 0;
+            *(buf + i++) = 0;
             break;
         } else if (ch == '\n') {
             break;
@@ -126,7 +126,7 @@ char *f_next_str(FILE *fp)
             break;
         }
 
-        buf[i++] = ch;
+        *(buf + i++) = ch;
     } while (ch != EOF);
 
     if (ch == EOF)
@@ -134,7 +134,7 @@ char *f_next_str(FILE *fp)
     
     char *result = (char *)(malloc(i * sizeof(char)));
     for (int j = 0; j < i; j++)
-        result[j] = buf[j];
+        *(result + j) = *(buf + j);
 
     return result;
 
