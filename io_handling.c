@@ -31,7 +31,7 @@ int** get_distance_list(FILE* input, char **file_names, int landmarks)
         input = fopen(*(file_names + i), "rb");
 
         if (input == NULL) {
-            fprintf(stderr, "could not open file :(");
+            fprintf(stderr, "could not open file: '%s'\n", *(file_names + i));
             exit(1);
         }
 
