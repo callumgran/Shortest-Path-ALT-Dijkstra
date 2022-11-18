@@ -19,7 +19,7 @@ static void write_distances_to_file(struct graph_t *graph,
                                     int idx)
 {
     FILE *output;
-    output = fopen(ti->names[idx], "wb");
+    output = fopen(*(ti->names + idx), "wb");
 
     if (output == NULL) {
         fprintf(stderr, "could not open preprocessed file. Are you sure you have preprocessed the\
@@ -28,7 +28,7 @@ files?\n");
     }
 
     for (int i = 0; i < graph->node_count; i++)
-        fwrite(&graph->n_list[i].d->dist, 4, 1, output);
+        fwrite(&(graph->n_list + i)->d->dist, 4, 1, output);
 
     fclose(output);
 }
@@ -47,13 +47,13 @@ static void *dijkstra_thread(void *arg)
         graph = *graph_copy(ti->graph);
     
     for (int i = 0; i < NUMBER_OF_LANDMARKS; i++) {
-        dijkstra_pre_process(&graph, ti->landmarks[i]);
+        dijkstra_pre_process(&graph, *(ti->landmarks + i));
         write_distances_to_file(&graph, ti, i);
     }
 
     graph_free(&graph);
     for (int i = 0; i < NUMBER_OF_LANDMARKS; i++) {
-        free(ti->names[i]);
+        free(*(ti->names + i));
     }
     free(ti->names);
     free(arg);
@@ -93,21 +93,21 @@ void preprocess(char *node_file, char *edge_file)
     char **output_files_cor = malloc(sizeof(char *) * NUMBER_OF_LANDMARKS);
     char **output_files_rev = malloc(sizeof(char *) * NUMBER_OF_LANDMARKS);
     for (int i = 0; i < NUMBER_OF_LANDMARKS; i++) {
-        output_files_cor[i] = malloc(sizeof(char) * 32);
-        output_files_rev[i] = malloc(sizeof(char) * 32);
+        *(output_files_cor + i) = malloc(sizeof(char) * 32);
+        *(output_files_rev + i) = malloc(sizeof(char) * 32);
     }
     
     int j = 0;
-    strncpy(output_files_rev[j], "1rev.txt", 32);
-    strncpy(output_files_cor[j++], "1cor.txt", 32);
-    strncpy(output_files_rev[j], "2rev.txt", 32);
-    strncpy(output_files_cor[j++], "2cor.txt", 32);
-    strncpy(output_files_rev[j], "3rev.txt", 32);
-    strncpy(output_files_cor[j++], "3cor.txt", 32);
-    strncpy(output_files_rev[j], "4rev.txt", 32);
-    strncpy(output_files_cor[j++], "4cor.txt", 32);
-    strncpy(output_files_rev[j], "5rev.txt", 32);
-    strncpy(output_files_cor[j++], "5cor.txt", 32);
+    strncpy(*(output_files_rev + j), "1rev.txt", 32);
+    strncpy(*(output_files_cor + j++), "1cor.txt", 32);
+    strncpy(*(output_files_rev + j), "2rev.txt", 32);
+    strncpy(*(output_files_cor + j++), "2cor.txt", 32);
+    strncpy(*(output_files_rev + j), "3rev.txt", 32);
+    strncpy(*(output_files_cor + j++), "3cor.txt", 32);
+    strncpy(*(output_files_rev + j), "4rev.txt", 32);
+    strncpy(*(output_files_cor + j++), "4cor.txt", 32);
+    strncpy(*(output_files_rev + j), "5rev.txt", 32);
+    strncpy(*(output_files_cor + j++), "5cor.txt", 32);
     
     n_threads = 0;
 

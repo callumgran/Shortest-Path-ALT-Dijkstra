@@ -23,14 +23,14 @@ void dijkstra_pre_process(struct graph_t *graph, int start_node)
     struct node_info_t *ni;
     while ((ni = (struct node_info_t *)heapq_pop(hq))) {
 
-        visited[ni->node_idx] = true;
+        *(visited + ni->node_idx) = true;
 
-        for (struct edge_t *edge = graph->n_list[ni->node_idx].first_edge; edge; edge = edge->next_edge) {
-            if (!visited[edge->to_node->node_idx]) {
-                int new_cost = graph->n_list[ni->node_idx].d->dist + edge->cost;
+        for (struct edge_t *edge = (graph->n_list + ni->node_idx)->first_edge; edge; edge = edge->next_edge) {
+            if (!(*(visited + edge->to_node->node_idx))) {
+                int new_cost = (graph->n_list + ni->node_idx)->d->dist + edge->cost;
                 if (edge->to_node->d->dist > new_cost) {
                     edge->to_node->d->dist = new_cost;
-                    edge->to_node->d->prev = &graph->n_list[ni->node_idx];
+                    edge->to_node->d->prev = (graph->n_list + ni->node_idx);
                     heapq_push_node(hq, edge->to_node->node_idx, new_cost);
                 }
             }
@@ -57,9 +57,9 @@ static int *dijkstra_poi(struct graph_t *graph, int start_node, int node_type)
 
     while ((ni = (struct node_info_t *)heapq_pop(hq))) {
 
-        if (!visited[ni->node_idx]) {
-            if ((graph->n_list[ni->node_idx].code & node_type) == node_type) {
-                nodes[nodes_size++] = ni->node_idx;
+        if (!(*(visited + ni->node_idx))) {
+            if (((graph->n_list + ni->node_idx)->code & node_type) == node_type) {
+                *(nodes + nodes_size++) = ni->node_idx;
                 if (nodes_size == 8) {
                     free(ni);
                     break;
@@ -67,14 +67,14 @@ static int *dijkstra_poi(struct graph_t *graph, int start_node, int node_type)
             }
         }
 
-        visited[ni->node_idx] = true;
+        *(visited + ni->node_idx) = true;
             
-        for (struct edge_t *edge = graph->n_list[ni->node_idx].first_edge; edge; edge = edge->next_edge) {
-            if (!visited[edge->to_node->node_idx]) {
-                int new_cost = graph->n_list[ni->node_idx].d->dist + edge->cost;
+        for (struct edge_t *edge = (graph->n_list + ni->node_idx)->first_edge; edge; edge = edge->next_edge) {
+            if (!(*(visited + edge->to_node->node_idx))) {
+                int new_cost = (graph->n_list + ni->node_idx)->d->dist + edge->cost;
                 if (edge->to_node->d->dist > new_cost) {
                     edge->to_node->d->dist = new_cost;
-                    edge->to_node->d->prev = &graph->n_list[ni->node_idx];
+                    edge->to_node->d->prev = (graph->n_list + ni->node_idx);
                     heapq_push_node(hq, edge->to_node->node_idx, new_cost);
                 }
             }
@@ -106,15 +106,15 @@ static int dijkstra(struct graph_t *graph, int start_node, int end_node)
 
     while ((ni = (struct node_info_t *)heapq_pop(hq))->node_idx != end_node) {
         nodes_checked++;
-        visited[ni->node_idx] = true;
+        *(visited + ni->node_idx) = true;
 
-        for (struct edge_t *edge = graph->n_list[ni->node_idx].first_edge; edge; edge = edge->next_edge) {
-            if (!visited[edge->to_node->node_idx]) {
-                int new_cost = graph->n_list[ni->node_idx].d->dist + edge->cost;
+        for (struct edge_t *edge = (graph->n_list + ni->node_idx)->first_edge; edge; edge = edge->next_edge) {
+            if (!(*(visited + edge->to_node->node_idx))) {
+                int new_cost = (graph->n_list + ni->node_idx)->d->dist + edge->cost;
                 if (edge->to_node->d->dist > new_cost) {
                     edge->to_node->d->dist = new_cost;
-                    edge->to_node->d->prev = &graph->n_list[ni->node_idx];
-                    heapq_push_node(hq, edge->to_node->node_idx, (new_cost));
+                    edge->to_node->d->prev = (graph->n_list + ni->node_idx);
+                    heapq_push_node(hq, edge->to_node->node_idx, new_cost);
                 }
             }
         }
@@ -146,7 +146,7 @@ void do_dijkstra_poi(char *node_file, char *edge_file, char* poi_file,
 
     struct node_t *node;
     for (int i = 0; i < 8; i++) {
-        node = &graph.n_list[poi[i]];
+        node = (graph.n_list + *(poi + i));
         printf("POI %d: %s of POI type: %d\n", i + 1, node->name, node_type);
     }
 
@@ -175,9 +175,9 @@ void do_dijkstra(char *node_file, char *edge_file, int start_node, int end_node)
     double time_taken = ((double)t)/(CLOCKS_PER_SEC/1000);
 
     printf("Nodes checked: %d \n", nodes_checked);
-    printf("Driving time in centi-seconds: %d\n", graph.n_list[end_node].d->dist);
+    printf("Driving time in centi-seconds: %d\n", (graph.n_list + end_node)->d->dist);
     
-    print_centi_to_drive_time(graph.n_list[end_node].d->dist);
+    print_centi_to_drive_time((graph.n_list + end_node)->d->dist);
 
     write_path_to_file(&graph, end_node, start_node);
 

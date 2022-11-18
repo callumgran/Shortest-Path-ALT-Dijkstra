@@ -6,17 +6,17 @@
 
 static inline void *heapq_left_child(struct heapq_t *hq, int idx)
 {
-    return hq->items[heapq_left_child_idx(idx)];
+    return *(hq->items + heapq_left_child_idx(idx));
 }
 
 static inline void *heapq_right_child(struct heapq_t *hq, int idx)
 {
-    return hq->items[heapq_right_child_idx(idx)];
+    return *(hq->items + heapq_right_child_idx(idx));
 }
 
 static inline void *heapq_parent(struct heapq_t *hq, int idx)
 {
-    return hq->items[heapq_parent_idx(idx)];
+    return *(hq->items + heapq_parent_idx(idx));
 }
 
 static void ensure_capacity(struct heapq_t *hq)
@@ -31,8 +31,8 @@ static void heapify_up(struct heapq_t *hq)
 {
     int idx = hq->size - 1;
     int parent_idx = heapq_parent_idx(idx);
-    while (parent_idx >= 0 && hq->cmp(hq->items[parent_idx], hq->items[idx])) {
-        swap(hq->items[parent_idx], hq->items[idx]);
+    while (parent_idx >= 0 && hq->cmp(*(hq->items + parent_idx), *(hq->items + idx))) {
+        swap(*(hq->items + parent_idx), *(hq->items + idx));
         idx = heapq_parent_idx(idx);
         parent_idx = heapq_parent_idx(idx);
     }
@@ -44,14 +44,14 @@ static void heapify_down(struct heapq_t *hq)
     int min_idx;
     while (heapq_has_left(idx, hq->size)) {
         min_idx = heapq_left_child_idx(idx);
-        if (heapq_has_right(idx, hq->size) && hq->cmp(hq->items[min_idx], 
+        if (heapq_has_right(idx, hq->size) && hq->cmp(*(hq->items + min_idx), 
                                                       heapq_right_child(hq, idx)))
             min_idx = heapq_right_child_idx(idx);
 
-        if (hq->cmp(hq->items[min_idx], hq->items[idx])) {
+        if (hq->cmp(*(hq->items + min_idx), *(hq->items + idx))) {
             break;
         } else {
-            swap(hq->items[idx], hq->items[min_idx]);
+            swap(*(hq->items + idx), *(hq->items + min_idx));
             idx = min_idx;
         }
     }
@@ -62,7 +62,7 @@ void *heapq_get(struct heapq_t *hq, int idx)
     if (idx < 0 || idx >= hq->size)
         return NULL;
 
-    return hq->items[idx];
+    return *(hq->items + idx);
 }
 
 void *heapq_pop(struct heapq_t *hq)
@@ -71,7 +71,7 @@ void *heapq_pop(struct heapq_t *hq)
     if (item == NULL)
         return NULL;
 
-    hq->items[0] = hq->items[--hq->size];
+    *(hq->items) = *(hq->items + --hq->size);
     heapify_down(hq);
     return item;
 }
@@ -79,7 +79,7 @@ void *heapq_pop(struct heapq_t *hq)
 void heapq_push(struct heapq_t *hq, void *item)
 {
     ensure_capacity(hq);
-    hq->items[hq->size++] = item;
+    *(hq->items + hq->size++) = item;
     heapify_up(hq);
 }
 
