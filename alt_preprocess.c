@@ -38,24 +38,27 @@ static void *dijkstra_thread(void *arg)
 {
     struct thread_data_t *ti;
     struct graph_t graph;
+    
 
     ti = (struct thread_data_t *)arg;
 
     if (ti->reversed)
         graph = *graph_transpose(ti->graph);
-    else
-        graph = *graph_copy(ti->graph);
-    
+    else 
+        graph = *ti->graph;
+
     for (int i = 0; i < NUMBER_OF_LANDMARKS; i++) {
         dijkstra_pre_process(&graph, *(ti->landmarks + i));
         write_distances_to_file(&graph, ti, i);
     }
 
-    graph_free(&graph);
     for (int i = 0; i < NUMBER_OF_LANDMARKS; i++) {
         free(*(ti->names + i));
     }
-    free(ti->names);
+
+    if (ti->reversed)
+        graph_free(&graph);
+
     free(arg);
     pthread_mutex_lock(&t_mutex);
     n_threads -= 1;
@@ -83,11 +86,12 @@ static void create_thread(struct graph_t *graph, int *landmarks,
 
 void preprocess(char *node_file, char *edge_file)
 {
-    int landmarks[5] = {LANDMARK_ONE, 
+    int landmarks[NUMBER_OF_LANDMARKS] = {LANDMARK_ONE, 
                         LANDMARK_TWO, 
                         LANDMARK_THREE,
                         LANDMARK_FOUR, 
-                        LANDMARK_FIVE};
+                        LANDMARK_FIVE,
+                        LANDMARK_SIX};
 
 
     char **output_files_cor = malloc(sizeof(char *) * NUMBER_OF_LANDMARKS);
@@ -108,6 +112,8 @@ void preprocess(char *node_file, char *edge_file)
     strncpy(*(output_files_cor + j++), "4cor.txt", 32);
     strncpy(*(output_files_rev + j), "5rev.txt", 32);
     strncpy(*(output_files_cor + j++), "5cor.txt", 32);
+    strncpy(*(output_files_rev + j), "6rev.txt", 32);
+    strncpy(*(output_files_cor + j++), "6cor.txt", 32);
     
     n_threads = 0;
 
@@ -128,7 +134,13 @@ void preprocess(char *node_file, char *edge_file)
     clock_gettime(CLOCK_MONOTONIC, &finish);
     elapsed = (finish.tv_sec - start.tv_sec);
     elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+    
     printf("Time used for preprocessing: %f s.\n", elapsed);
-
+    for (int i = 0; i < NUMBER_OF_LANDMARKS; i++) {
+        free(*(output_files_cor + i));
+        free(*(output_files_rev + i));
+    }
+    free(output_files_cor);
+    free(output_files_rev);
     graph_free(&graph);
 }

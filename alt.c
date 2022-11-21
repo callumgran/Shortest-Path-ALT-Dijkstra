@@ -33,12 +33,13 @@ static int est_dist(int **from_list, int **to_list, int end_idx, int node_idx)
 {   
     int est_dist = 0;
     int tmp_est = 0;
-    
+    int tmp_est_1 = 0;
+    int tmp_est_2 = 0;
+
     for (int i = 0; i < NUMBER_OF_LANDMARKS; i++) {
-        tmp_est = est_dist_l_e(from_list, i, end_idx, node_idx);
-        if (tmp_est > est_dist)
-            est_dist = tmp_est;
-        tmp_est = est_dist_e_l(to_list, i, end_idx, node_idx);
+        tmp_est_1 = est_dist_l_e(from_list, i, end_idx, node_idx);
+        tmp_est_2 = est_dist_e_l(to_list, i, end_idx, node_idx);
+        tmp_est = tmp_est_1 > tmp_est_2 ? tmp_est_1 : tmp_est_2;
         if (tmp_est > est_dist)
             est_dist = tmp_est;
     }
@@ -102,6 +103,7 @@ static char** get_from_files()
     strncpy(*(from_files + 2), "3cor.txt", 32);
     strncpy(*(from_files + 3), "4cor.txt", 32);
     strncpy(*(from_files + 4), "5cor.txt", 32);
+    strncpy(*(from_files + 5), "6cor.txt", 32);
     return from_files;
 }
 
@@ -120,6 +122,7 @@ static char** get_to_files()
     strncpy(*(to_files + 2), "3rev.txt", 32);
     strncpy(*(to_files + 3), "4rev.txt", 32);
     strncpy(*(to_files + 4), "5rev.txt", 32);
+    strncpy(*(to_files + 5), "6rev.txt", 32);
     return to_files;
 }
 

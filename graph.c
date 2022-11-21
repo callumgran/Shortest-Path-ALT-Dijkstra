@@ -12,18 +12,17 @@ void graph_insert_poi(struct graph_t *graph, int node_idx, int node_code, char* 
 {
     (graph->n_list + node_idx)->code = node_code;
     (graph->n_list + node_idx)->name = strdup(name);
+    free(name);
 }
 
 void graph_insert_node(struct graph_t *graph, int node_idx, float latitude, float longitude)
 {
-    struct node_t *node = malloc(sizeof(struct node_t));
-    node->node_idx = node_idx;
-    node->latitude = latitude;
-    node->longitude = longitude;
-    node->name = NULL;
-    node->code = 0;
-
-    *(graph->n_list + node_idx) = *node;
+    (graph->n_list + node_idx)->node_idx = node_idx;
+    (graph->n_list + node_idx)->latitude = latitude;
+    (graph->n_list + node_idx)->longitude = longitude;
+    (graph->n_list + node_idx)->d = malloc(sizeof(struct prev_t *));
+    (graph->n_list + node_idx)->name = NULL;
+    (graph->n_list + node_idx)->code = 0;
 }
 
 void graph_insert_edge(struct graph_t *graph, int from_idx, int to_idx, int cost)

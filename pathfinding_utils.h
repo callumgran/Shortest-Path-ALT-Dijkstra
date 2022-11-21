@@ -8,7 +8,7 @@
 
 /* Defines */
 #define INF (999999999)
-#define NUMBER_OF_LANDMARKS 5
+#define NUMBER_OF_LANDMARKS 6
 
 /* Methods */
 
@@ -17,9 +17,6 @@ bool compare(void *a, void *b);
 
 /* Method to push a node to the heap. */
 void heapq_push_node(struct heapq_t *hq, int node, int total_cost);
-
-/* Method to initialize the previous node. */
-struct prev_t *malloc_prev(int i);
 
 /* Method to initialize all previous nodes. */
 void init_prev(struct graph_t *graph, int start);

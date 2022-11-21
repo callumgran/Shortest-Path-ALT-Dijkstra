@@ -17,17 +17,11 @@ void heapq_push_node(struct heapq_t *hq, int node, int total_cost)
     heapq_push(hq, ni);
 }
 
-struct prev_t *malloc_prev(int i)
-{
-    struct prev_t *prev = (struct prev_t *)(malloc(sizeof(struct prev_t)));
-    prev->dist = INF;
-    return prev;
-}
-
 void init_prev(struct graph_t *graph, int start)
 {
     for (int i = 0; i < graph->node_count; i++) {
-        (graph->n_list + i)->d = malloc_prev(i);
+        (graph->n_list + i)->d->dist = INF;
+        (graph->n_list + i)->d->prev = NULL;
     }
     (graph->n_list + start)->d->dist = 0;
 }
