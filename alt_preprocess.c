@@ -86,11 +86,12 @@ static void create_thread(struct graph_t *graph, int *landmarks,
 
 void preprocess(char *node_file, char *edge_file)
 {
-    int landmarks[5] = {LANDMARK_ONE, 
+    int landmarks[NUMBER_OF_LANDMARKS] = {LANDMARK_ONE, 
                         LANDMARK_TWO, 
                         LANDMARK_THREE,
                         LANDMARK_FOUR, 
-                        LANDMARK_FIVE};
+                        LANDMARK_FIVE,
+                        LANDMARK_SIX};
 
 
     char **output_files_cor = malloc(sizeof(char *) * NUMBER_OF_LANDMARKS);
@@ -111,6 +112,8 @@ void preprocess(char *node_file, char *edge_file)
     strncpy(*(output_files_cor + j++), "4cor.txt", 32);
     strncpy(*(output_files_rev + j), "5rev.txt", 32);
     strncpy(*(output_files_cor + j++), "5cor.txt", 32);
+    strncpy(*(output_files_rev + j), "6rev.txt", 32);
+    strncpy(*(output_files_cor + j++), "6cor.txt", 32);
     
     n_threads = 0;
 

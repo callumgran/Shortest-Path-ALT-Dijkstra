@@ -20,6 +20,7 @@ void graph_insert_node(struct graph_t *graph, int node_idx, float latitude, floa
     (graph->n_list + node_idx)->node_idx = node_idx;
     (graph->n_list + node_idx)->latitude = latitude;
     (graph->n_list + node_idx)->longitude = longitude;
+    (graph->n_list + node_idx)->d = malloc(sizeof(struct prev_t *));
     (graph->n_list + node_idx)->name = NULL;
     (graph->n_list + node_idx)->code = 0;
 }
