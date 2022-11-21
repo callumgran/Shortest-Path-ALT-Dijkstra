@@ -145,7 +145,7 @@ error_eof:
 int f_next_int(FILE *fp)
 {
     char        *buf;
-    int         ret;
+    int         ret = 0;
     
     buf = f_next_item(fp);
     if (buf == NULL)
@@ -160,13 +160,13 @@ float f_next_float(FILE *fp)
 {
     char        *buf;
     char        *strtofp;
-    float      ret;
+    float       ret = 0;
     
     buf = f_next_item(fp);
     if (buf == NULL)
         return ERROR_EOF;
 
-    ret = atof(buf);
+    ret = strtof(buf, NULL);
     free(buf);
     return ret;
 }
